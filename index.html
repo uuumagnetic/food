@@ -17,9 +17,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
-  <!-- Google Maps Places API (免金鑰簡易自動完成連線) -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=&libraries=places"></script>
-
   <script>
     tailwind.config = {
       theme: {
@@ -36,10 +33,6 @@
     ::-webkit-scrollbar-track { background: #f1f5f9; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    /* Google Places Autocomplete 下拉選單樣式優化 */
-    .pac-container { z-index: 99999 !important; border-radius: 12px; margin-top: 4px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; font-family: 'Noto Sans TC', sans-serif; }
-    .pac-item { padding: 10px 14px; cursor: pointer; }
-    .pac-item:hover { background-color: #f0fdf4; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans selection:bg-teal-500 selection:text-white pb-12">
@@ -56,7 +49,7 @@
             花蓮美食口袋清單
             <span class="text-xs bg-yellow-400 text-slate-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Hualien Food</span>
           </h1>
-          <p class="text-xs text-teal-100 mt-0.5">Google 地點即時感應 ‧ 一鍵直達導航 ‧ 多人同步</p>
+          <p class="text-xs text-teal-100 mt-0.5">一鍵 Google 查地址 ‧ 一鍵直達導航 ‧ 多人同步</p>
         </div>
       </div>
       
@@ -175,13 +168,13 @@
       <form id="foodForm" class="p-6 space-y-4 overflow-y-auto flex-1 text-sm">
         <input type="hidden" id="editItemId" value="">
 
-        <!-- Name with Google Place Autocomplete -->
-        <div class="space-y-1.5 relative">
+        <!-- Name Input -->
+        <div class="space-y-1.5">
           <label class="font-bold text-slate-700 flex items-center justify-between">
             <span>店家名稱 <span class="text-rose-500">*</span></span>
-            <span class="text-[11px] text-teal-600 font-normal"><i class="fa-solid fa-location-dot"></i> 輸入名稱自動聯想 Google 地標</span>
+            <span class="text-[11px] text-teal-600 font-normal">自由輸入任何店家（例如：南華麵店）</span>
           </label>
-          <input type="text" id="itemName" required autocomplete="off" placeholder="例如：慶豐麵店、花蓮香扁食..." 
+          <input type="text" id="itemName" required placeholder="例如：南華麵店、慶豐麵店..." 
             class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all font-medium">
         </div>
 
@@ -213,21 +206,21 @@
           </div>
         </div>
 
-        <!-- Address with One-Click Google Search Button -->
+        <!-- Address with Instant Google Search Button -->
         <div class="space-y-1.5">
           <label class="font-bold text-slate-700 flex items-center justify-between">
             <span>地址</span>
-            <button type="button" id="searchMapsBtn" class="text-[11px] bg-teal-50 hover:bg-teal-100 text-teal-700 px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 shadow-2xs">
-              <i class="fa-solid fa-magnifying-glass-location"></i> 一鍵 Google 尋找地址
+            <button type="button" id="searchMapsBtn" class="text-[11px] bg-teal-50 hover:bg-teal-100 text-teal-700 px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 shadow-2xs">
+              <i class="fa-solid fa-magnifying-glass-location text-teal-600"></i> 🔍 一鍵 Google 查地址
             </button>
           </label>
-          <input type="text" id="itemAddress" placeholder="選擇上方 Google 地標或點擊右上方按鈕尋找" 
+          <input type="text" id="itemAddress" placeholder="點擊右上方按鈕查地址並貼上" 
             class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700">
         </div>
 
         <div class="space-y-1.5">
           <label class="font-bold text-slate-700">心得備註 / 推薦必點</label>
-          <textarea id="itemNote" rows="2" placeholder="例如：必點煙燻滷味、切仔麵！" 
+          <textarea id="itemNote" rows="2" placeholder="例如：必點煎麵、滷味！" 
             class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700 resize-none"></textarea>
         </div>
 
@@ -263,7 +256,7 @@
 
       <div class="p-6 space-y-4">
         <p class="text-xs text-slate-500">
-          此格式包含店家名稱,地址以及 Google 地圖導航連結，可以直接複製文字傳送到 LINE 群組與朋友討論！
+          此格式包含店家名稱、地址以及 Google 地圖導航連結，可以直接複製文字傳送到 LINE 群組與朋友討論！
         </p>
 
         <textarea id="shareTextarea" readonly rows="10" 
@@ -307,16 +300,15 @@
     const collectionRef = db.collection('hualien_shared_foods');
 
     const PRESET_HUALIEN_DATABASE = [
+      { name: "南華麵店", address: "花蓮縣吉安鄉中華路二段199號", category: "麵食", note: "必點：招牌煎麵、各式滷味" },
       { name: "慶豐麵店", address: "花蓮縣吉安鄉吉安路六號", category: "麵食", note: "必點：煙燻滷味、切仔麵" },
       { name: "花蓮香扁食", address: "花蓮縣花蓮市中山路347號", category: "麵食", note: "必點：鮮蝦扁食" },
-      { name: "液香扁食", address: "花蓮縣花蓮市信義街42號", category: "麵食", note: "純肉扁食" },
-      { name: "炸蛋蔥油餅 黃車", address: "花蓮縣花蓮市復興街102號", category: "小吃", note: "半熟蛋蔥油餅" },
+      { name: "炸蛋蔥油餅", address: "花蓮縣花蓮市復興街102號", category: "小吃", note: "半熟蛋蔥油餅" },
       { name: "廟口紅茶", address: "花蓮縣花蓮市成功街218號", category: "飲料", note: "鋼管紅茶" }
     ];
 
     let foodItems = [];
     let currentStatusFilter = 'ALL';
-    let autocomplete = null;
 
     const foodListContainer = document.getElementById('foodList');
     const emptyState = document.getElementById('emptyState');
@@ -344,29 +336,6 @@
       listenToFirebase();
       renderRandomChips();
       bindEvents();
-      initGoogleAutocomplete();
-    }
-
-    // 初始化 Google Places 聯想
-    function initGoogleAutocomplete() {
-      if (typeof google === 'object' && google.maps && google.maps.places) {
-        autocomplete = new google.maps.places.Autocomplete(itemName, {
-          componentRestrictions: { country: 'tw' },
-          fields: ['name', 'formatted_address']
-        });
-
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          if (place && place.name) {
-            itemName.value = place.name;
-            if (place.formatted_address) {
-              // 自動代入抓到的地址（去除多餘字串）
-              itemAddress.value = place.formatted_address.replace(/^台灣/, '');
-              showToast(`已自動帶入「${place.name}」地址！`);
-            }
-          }
-        });
-      }
     }
 
     function listenToFirebase() {
@@ -386,8 +355,8 @@
     }
 
     function seedInitialData() {
-      collectionRef.add({ name: "慶豐麵店", category: "麵食", address: "花蓮縣吉安鄉吉安路六號", note: "必點：煙燻滷味、切仔麵！", rating: 5, visited: false, orderIndex: 1000 });
-      collectionRef.add({ name: "花蓮香扁食", category: "麵食", address: "花蓮縣花蓮市中山路347號", note: "必點：鮮蝦扁食、紅辣炒手！", rating: 5, visited: false, orderIndex: 2000 });
+      collectionRef.add({ name: "南華麵店", category: "麵食", address: "花蓮縣吉安鄉中華路二段199號", note: "必點：招牌煎麵、各式滷味！", rating: 5, visited: false, orderIndex: 1000 });
+      collectionRef.add({ name: "慶豐麵店", category: "麵食", address: "花蓮縣吉安鄉吉安路六號", note: "必點：煙燻滷味、切仔麵！", rating: 5, visited: false, orderIndex: 1500 });
     }
 
     function showToast(msg, isSuccess = true) {
@@ -507,11 +476,11 @@
       document.getElementById('cancelFormBtn').addEventListener('click', closeModal);
       foodForm.addEventListener('submit', handleFormSubmit);
 
-      // 地址欄位旁的一鍵 Google 尋找地址按鈕
+      // 一鍵 Google 查地址按鈕（點下去秒開 Google 搜尋該店家，查好地址貼過來最快最準）
       document.getElementById('searchMapsBtn').addEventListener('click', () => {
         const name = itemName.value.trim();
         if (!name) {
-          showToast("請先輸入店家名稱！", false);
+          showToast("請先輸入店家名稱（例如：南華麵店）！", false);
           itemName.focus();
           return;
         }
