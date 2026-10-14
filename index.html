@@ -190,14 +190,14 @@
         <div class="space-y-1.5 relative">
           <label class="font-bold text-slate-700 flex items-center justify-between">
             <span>店家名稱 <span class="text-rose-500">*</span></span>
-            <span class="text-[11px] text-teal-600 font-normal"><i class="fa-solid fa-wand-magic-sparkles"></i> 輸入自動感應並帶入地址與備註</span>
+            <span class="text-[11px] text-teal-600 font-normal"><i class="fa-solid fa-wand-magic-sparkles"></i> 輸入關鍵字自動感應多筆選項</span>
           </label>
           <div class="relative">
-            <input type="text" id="itemName" required autocomplete="off" placeholder="例如：花蓮香扁食" 
+            <input type="text" id="itemName" required autocomplete="off" placeholder="例如：慶豐麵店、扁食、紅茶..." 
               class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all font-medium">
             
             <!-- 智慧感應下拉清單 -->
-            <div id="autocompleteDropdown" class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-slate-200 z-30 max-h-56 overflow-y-auto hidden divide-y divide-slate-100">
+            <div id="autocompleteDropdown" class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-slate-200 z-30 max-h-60 overflow-y-auto hidden divide-y divide-slate-100">
               <!-- 動態生成相符選項 -->
             </div>
           </div>
@@ -239,7 +239,7 @@
             <span class="text-[11px] text-slate-400">可手動修改</span>
           </label>
           <div class="relative">
-            <input type="text" id="itemAddress" placeholder="例如：花蓮縣花蓮市中山路347號" 
+            <input type="text" id="itemAddress" placeholder="例如：花蓮縣吉安鄉吉安路六號" 
               class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700">
           </div>
         </div>
@@ -247,7 +247,7 @@
         <!-- Note & Recommendation -->
         <div class="space-y-1.5">
           <label class="font-bold text-slate-700">心得備註 / 推薦必點</label>
-          <textarea id="itemNote" rows="2" placeholder="例如：必點綜合扁食、紅辣炒手，滷肉飯也很好吃！" 
+          <textarea id="itemNote" rows="2" placeholder="例如：必點煙燻滷味、切仔麵！" 
             class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700 resize-none"></textarea>
         </div>
 
@@ -331,18 +331,20 @@
     const db = firebase.firestore();
     const collectionRef = db.collection('hualien_shared_foods');
 
-    // 豐富的熱門花蓮美食資料庫 (供自動感應與換一批使用)
+    // 大幅擴充的熱門花蓮美食資料庫 (涵蓋慶豐麵店、各大扁食、紅茶、小吃等數十間)
     const PRESET_HUALIEN_DATABASE = [
+      { name: "慶豐麵店", address: "花蓮縣吉安鄉吉安路六號", category: "麵食", note: "必點：煙燻滷味、切仔麵、肝連肉" },
       { name: "花蓮香扁食", address: "花蓮縣花蓮市中山路347號", category: "麵食", note: "必點：鮮蝦扁食、綜合扁食" },
+      { name: "液香扁食", address: "花蓮縣花蓮市信義街42號", category: "麵食", note: "蔣公指定名店，純肉扁食" },
+      { name: "戴記扁食", address: "花蓮縣花蓮市中華路120號", category: "麵食", note: "清爽湯頭古早味扁食" },
       { name: "炸蛋蔥油餅 黃車", address: "花蓮縣花蓮市復興街102號", category: "小吃", note: "必點：半熟蛋蔥油餅" },
       { name: "炸蛋蔥油餅 藍車", address: "花蓮縣花蓮市復興街102號", category: "小吃", note: "老字號雙車爭霸" },
       { name: "廟口紅茶", address: "花蓮縣花蓮市成功街218號", category: "飲料", note: "必點：鋼管紅茶、台式西點(小西餅)" },
+      { name: "黎明紅茶", address: "花蓮縣花蓮市南京街185號", category: "飲料", note: "懷舊紅茶與傳統早餐、蛋餅" },
       { name: "耕壽司", address: "花蓮縣花蓮市節約街16-1號", category: "餐廳", note: "必點：炙燒鮭魚握壽司" },
-      { name: "戴記扁食", address: "花蓮縣花蓮市中華路120號", category: "麵食", note: "清爽湯頭古早味" },
-      { name: "公正包子", address: "花蓮縣吉安鄉仁里一街29-1號", category: "小吃", note: "小籠包外皮Q彈" },
-      { name: "周家蒸餃", address: "花蓮縣花蓮市公正街4-2號", category: "小吃", note: "蒸餃肉汁飽滿" },
-      { name: "海埔蚵仔煎", address: "花蓮縣花蓮市自由街88號", category: "小吃", note: "排隊名店，蚵仔新鮮" },
-      { name: "黎明紅茶", address: "花蓮縣花蓮市南京街185號", category: "飲料", note: "懷舊紅茶與傳統早餐" },
+      { name: "公正包子", address: "花蓮縣吉安鄉仁里一街29-1號", category: "小吃", note: "小籠包外皮Q彈微甜" },
+      { name: "周家蒸餃", address: "花蓮縣花蓮市公正街4-2號", category: "小吃", note: "蒸餃肉汁飽滿，營業到深夜" },
+      { name: "海埔蚵仔煎", address: "花蓮縣花蓮市自由街88號", category: "小吃", note: "排隊名店，蚵仔新鮮醬汁獨特" },
       { name: "單一純賣雞湯米粉", address: "花蓮縣花蓮市中美路67號", category: "麵食", note: "小卷雞湯米粉加泡椒神美味" },
       { name: "一心泡泡冰", address: "花蓮縣花蓮市中華路66號", category: "甜點", note: "綿密泡泡冰與花生紅豆" },
       { name: "五霸焦糖包心粉圓", address: "花蓮縣花蓮市正義街60號", category: "甜點", note: "棋盤狀焦糖刨冰" },
@@ -351,7 +353,10 @@
       { name: "短腿阿鹿餅乾 花蓮店", address: "花蓮縣新城鄉博愛路47號", category: "伴手禮", note: "可可風味曲奇餅" },
       { name: "花蓮縣餅 菩提餅舖", address: "花蓮縣花蓮市中華路1號", category: "伴手禮", note: "必買：奶油酥條" },
       { name: "曾記麻糬", address: "花蓮縣花蓮市站前路", category: "伴手禮", note: "現包花生與芝麻麻糬" },
-      { name: "家咖哩", address: "花蓮縣花蓮市中美路106號", category: "餐廳", note: "老宅好氣氛，南洋風味咖哩" }
+      { name: "家咖哩", address: "花蓮縣花蓮市中美路106號", category: "餐廳", note: "老宅好氣氛，南洋風味咖哩" },
+      { name: "美崙紅茶", address: "花蓮縣花蓮市化廠街8號", category: "飲料", note: "在地人推薦的古早味早餐與紅茶" },
+      { name: "吉安稻草人 麵館", address: "花蓮縣吉安鄉中山路三段", category: "麵食", note: "在地人氣麵食小吃" },
+      { name: "豐春冰菓店", address: "花蓮縣壽豐鄉壽豐路一段79號", category: "甜點", note: "傳統柴燒甘蔗冰與天然配料" }
     ];
 
     let foodItems = [];
@@ -410,7 +415,8 @@
 
     function seedInitialData() {
       const initialBatch = [
-        { name: "花蓮香扁食", category: "麵食", address: "花蓮縣花蓮市中山路347號", note: "必點：鮮蝦扁食、紅辣炒手！湯頭鮮美。", rating: 5, visited: false, orderIndex: 1000 },
+        { name: "慶豐麵店", category: "麵食", address: "花蓮縣吉安鄉吉安路六號", note: "必點：煙燻滷味、切仔麵！", rating: 5, visited: false, orderIndex: 1000 },
+        { name: "花蓮香扁食", category: "麵食", address: "花蓮縣花蓮市中山路347號", note: "必點：鮮蝦扁食、紅辣炒手！湯頭鮮美。", rating: 5, visited: false, orderIndex: 1500 },
         { name: "炸蛋蔥油餅 黃車", category: "小吃", address: "花蓮縣花蓮市復興街102號", note: "一定要點半熟蛋，趁熱吃蛋黃爆漿超讚！", rating: 5, visited: true, orderIndex: 2000 },
         { name: "廟口紅茶", category: "飲料", address: "花蓮縣花蓮市成功街218號", note: "二樓鋼管傳送古早味紅茶，搭配大台式西點。", rating: 4, visited: false, orderIndex: 3000 }
       ];
@@ -634,7 +640,7 @@
       document.getElementById('copyShareBtn').addEventListener('click', copyShareText);
     }
 
-    // 處理名稱輸入時的智慧感應跳出清單
+    // 處理名稱輸入時的智慧感應跳出清單（支援模糊搜尋大量名店）
     function handleNameInput() {
       const val = itemName.value.trim().toLowerCase();
       if (!val) {
@@ -642,6 +648,7 @@
         return;
       }
 
+      // 只要名稱包含輸入的關鍵字（例如輸入「麵」或「扁食」或「慶豐」）就會全部列出
       const matches = PRESET_HUALIEN_DATABASE.filter(s => s.name.toLowerCase().includes(val));
 
       if (matches.length > 0) {
@@ -653,7 +660,7 @@
               </div>
               <div class="text-slate-400 text-xs font-mono mt-0.5">📍 ${escapeHtml(spot.address)}</div>
             </div>
-            <span class="text-[11px] bg-teal-100 text-teal-700 font-bold px-2 py-0.5 rounded-md">點擊帶入</span>
+            <span class="text-[11px] bg-teal-100 text-teal-700 font-bold px-2 py-0.5 rounded-md shrink-0">點擊帶入</span>
           </div>
         `).join('');
         autocompleteDropdown.classList.remove('hidden');
@@ -662,7 +669,7 @@
       }
     }
 
-    // 全域宣告點擊感應清單項目後，自動帶入地址、分類、備註
+    // 點擊感應清單項目後，自動帶入地址、分類、備註
     window.selectPresetOption = function(spotName) {
       const spot = PRESET_HUALIEN_DATABASE.find(s => s.name === spotName);
       if (spot) {
