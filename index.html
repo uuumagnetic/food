@@ -273,7 +273,7 @@
     </div>
   </div>
 
-  <!-- Add / Edit Trip Modal (行程專用 - 滾動式時間選擇器) -->
+  <!-- Add / Edit Trip Modal (行程專用) -->
   <div id="tripModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
       <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
@@ -289,14 +289,12 @@
       <form id="tripForm" class="p-6 space-y-4 overflow-y-auto flex-1 text-sm">
         <input type="hidden" id="editTripId" value="">
 
-        <!-- 優化後的時間選擇器區塊 -->
         <div class="space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
           <label class="font-bold text-slate-700 flex items-center justify-between text-xs uppercase tracking-wider">
             <span>選擇時段與時間</span>
-            <span class="text-teal-600 font-normal">可直接上下滑動或點選數值</span>
+            <span class="text-teal-600 font-normal">點選時段或調整滾動時間</span>
           </label>
 
-          <!-- 時段快速按鈕 -->
           <div class="flex flex-wrap gap-1.5 pb-2 border-b border-slate-200/60">
             <button type="button" onclick="setPeriod('上午')" class="px-2.5 py-1 bg-white hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-2xs">🌅 上午</button>
             <button type="button" onclick="setPeriod('中午')" class="px-2.5 py-1 bg-white hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-2xs">🍜 中午</button>
@@ -304,9 +302,7 @@
             <button type="button" onclick="setPeriod('晚上')" class="px-2.5 py-1 bg-white hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-2xs">🌙 晚上</button>
           </div>
 
-          <!-- 上下滑動選擇器容器 (Picker) -->
           <div class="grid grid-cols-3 gap-2 pt-1">
-            <!-- 上午/下午區分 -->
             <div>
               <label class="text-[11px] text-slate-500 font-medium block mb-1">時段</label>
               <select id="pickerAmPm" class="w-full px-2 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm text-teal-700 focus:ring-2 focus:ring-teal-500">
@@ -316,7 +312,6 @@
                 <option value="晚上">晚上</option>
               </select>
             </div>
-            <!-- 小時滾動/下拉 -->
             <div>
               <label class="text-[11px] text-slate-500 font-medium block mb-1">小時 (1-12)</label>
               <select id="pickerHour" class="w-full px-2 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 focus:ring-2 focus:ring-teal-500">
@@ -325,7 +320,6 @@
                 <option value="09">09 點</option><option value="10" selected>10 點</option><option value="11">11 點</option><option value="12">12 點</option>
               </select>
             </div>
-            <!-- 分鐘滾動/下拉 -->
             <div>
               <label class="text-[11px] text-slate-500 font-medium block mb-1">分鐘</label>
               <select id="pickerMinute" class="w-full px-2 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 focus:ring-2 focus:ring-teal-500">
@@ -340,7 +334,6 @@
               </select>
             </div>
           </div>
-          <input type="hidden" id="tripTimeInput">
         </div>
 
         <div class="space-y-1.5">
@@ -438,6 +431,7 @@
     let foodItems = [];
     let tripItems = [];
     let dayDates = {};
+    let maxDayCount = 3; // 預設至少顯示到 3 天
     let currentStatusFilter = 'ALL';
     let currentActiveTab = 'FOOD';
     let currentDay = 1;
@@ -469,7 +463,6 @@
     const pickerAmPm = document.getElementById('pickerAmPm');
     const pickerHour = document.getElementById('pickerHour');
     const pickerMinute = document.getElementById('pickerMinute');
-    const tripTimeInput = document.getElementById('tripTimeInput');
     const tripName = document.getElementById('tripName');
     const tripAddress = document.getElementById('tripAddress');
     const tripNote = document.getElementById('tripNote');
@@ -530,7 +523,9 @@
     function listenToMetaFirebase() {
       metaCollectionRef.doc('day_dates').onSnapshot((doc) => {
         if (doc.exists) {
-          dayDates = doc.data() || {};
+          const data = doc.data() || {};
+          dayDates = data;
+          if (data.maxDay) maxDayCount = Math.max(maxDayCount, data.maxDay);
           renderTripList();
         }
       });
@@ -625,11 +620,16 @@
     }
 
     function renderTripList() {
-      const daysSet = new Set([1, 2]);
+      let highestDay = maxDayCount;
       tripItems.forEach(item => {
-        if (item.day) daysSet.add(parseInt(item.day, 10));
+        if (item.day && item.day > highestDay) highestDay = item.day;
       });
-      const days = Array.from(daysSet).sort((a, b) => a - b);
+      maxDayCount = highestDay;
+
+      const days = [];
+      for (let i = 1; i <= maxDayCount; i++) {
+        days.push(i);
+      }
 
       dayTabsContainer.innerHTML = days.map(d => {
         const dateStr = dayDates[`day_${d}`] ? ` (${dayDates[`day_${d}`]})` : '';
@@ -752,6 +752,7 @@
       dayDateInput.addEventListener('blur', async () => {
         const val = dayDateInput.value.trim();
         dayDates[`day_${currentDay}`] = val;
+        dayDates.maxDay = maxDayCount;
         await metaCollectionRef.doc('day_dates').set(dayDates, { merge: true });
         renderTripList();
       });
@@ -761,10 +762,11 @@
       document.getElementById('cancelTripFormBtn').addEventListener('click', closeTripModal);
       tripForm.addEventListener('submit', handleTripFormSubmit);
 
-      document.getElementById('addDayBtn').addEventListener('click', () => {
-        const daysSet = new Set([1, 2]);
-        tripItems.forEach(item => { if (item.day) daysSet.add(item.day); });
-        currentDay = Math.max(...Array.from(daysSet)) + 1;
+      document.getElementById('addDayBtn').addEventListener('click', async () => {
+        maxDayCount += 1;
+        currentDay = maxDayCount;
+        dayDates.maxDay = maxDayCount;
+        await metaCollectionRef.doc('day_dates').set(dayDates, { merge: true });
         renderTripList();
         showToast(`已新增第 ${currentDay} 天行程！`);
       });
@@ -858,7 +860,6 @@
       tripAddress.value = item.address || '';
       tripNote.value = item.note || '';
 
-      // 解析儲存的時間字串 (例如 "上午 10:30")
       const parts = (item.time || '').split(' ');
       if (parts.length >= 2) {
         pickerAmPm.value = parts[0];
@@ -928,9 +929,10 @@
       });
 
       text += `\n--- 📅 多日旅遊行程 ---\n`;
-      const daysSet = new Set([1, 2]);
-      tripItems.forEach(item => { if (item.day) daysSet.add(item.day); });
-      const days = Array.from(daysSet).sort((a, b) => a - b);
+      let highestDay = maxDayCount;
+      tripItems.forEach(item => { if (item.day && item.day > highestDay) highestDay = item.day; });
+      const days = [];
+      for (let i = 1; i <= highestDay; i++) days.push(i);
 
       days.forEach(d => {
         const dateStr = dayDates[`day_${d}`] ? ` (${dayDates[`day_${d}`]})` : '';
