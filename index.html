@@ -86,7 +86,9 @@
         <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
           <i class="fa-solid fa-fire text-orange-500"></i> 熱門花蓮名店快速新增 (點擊帶入)
         </h2>
-        <span class="text-xs text-slate-400">點擊店家名稱自動帶入</span>
+        <button type="button" id="refreshChipsBtn" class="text-xs text-teal-600 hover:text-teal-700 font-bold flex items-center gap-1 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-lg transition-all">
+          <i class="fa-solid fa-rotate"></i> 換一批
+        </button>
       </div>
       <div id="quickAddChips" class="flex flex-wrap gap-2 pt-1 max-h-28 overflow-y-auto">
         <!-- Preset items dynamically rendered here -->
@@ -184,17 +186,19 @@
       <form id="foodForm" class="p-6 space-y-4 overflow-y-auto flex-1 text-sm">
         <input type="hidden" id="editItemId" value="">
 
-        <!-- Name with Auto-Suggest -->
+        <!-- Name with Auto-Suggest & Smart Selection Dropdown -->
         <div class="space-y-1.5 relative">
           <label class="font-bold text-slate-700 flex items-center justify-between">
             <span>店家名稱 <span class="text-rose-500">*</span></span>
-            <span class="text-[11px] text-teal-600 font-normal"><i class="fa-solid fa-wand-magic-sparkles"></i> 輸入名稱自動帶入地址</span>
+            <span class="text-[11px] text-teal-600 font-normal"><i class="fa-solid fa-wand-magic-sparkles"></i> 輸入自動感應並帶入地址與備註</span>
           </label>
           <div class="relative">
-            <input type="text" id="itemName" required placeholder="例如：花蓮香扁食" 
+            <input type="text" id="itemName" required autocomplete="off" placeholder="例如：花蓮香扁食" 
               class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all font-medium">
-            <div id="autocompleteDropdown" class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-slate-200 z-20 max-h-48 overflow-y-auto hidden">
-              <!-- Autocomplete options generated dynamically -->
+            
+            <!-- 智慧感應下拉清單 -->
+            <div id="autocompleteDropdown" class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-slate-200 z-30 max-h-56 overflow-y-auto hidden divide-y divide-slate-100">
+              <!-- 動態生成相符選項 -->
             </div>
           </div>
         </div>
@@ -232,14 +236,11 @@
         <div class="space-y-1.5">
           <label class="font-bold text-slate-700 flex items-center justify-between">
             <span>地址</span>
-            <span class="text-[11px] text-slate-400">可留空或手動修改</span>
+            <span class="text-[11px] text-slate-400">可手動修改</span>
           </label>
           <div class="relative">
             <input type="text" id="itemAddress" placeholder="例如：花蓮縣花蓮市中山路347號" 
               class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700">
-            <button type="button" id="geoLookupBtn" title="補全花蓮預設地圖資訊" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded-lg text-slate-600 transition-all">
-              <i class="fa-solid fa-location-crosshairs"></i> 自動填補
-            </button>
           </div>
         </div>
 
@@ -330,7 +331,7 @@
     const db = firebase.firestore();
     const collectionRef = db.collection('hualien_shared_foods');
 
-    // Preset Built-in Database of popular Hualien Delicacies for Auto-Lookup
+    // 豐富的熱門花蓮美食資料庫 (供自動感應與換一批使用)
     const PRESET_HUALIEN_DATABASE = [
       { name: "花蓮香扁食", address: "花蓮縣花蓮市中山路347號", category: "麵食", note: "必點：鮮蝦扁食、綜合扁食" },
       { name: "炸蛋蔥油餅 黃車", address: "花蓮縣花蓮市復興街102號", category: "小吃", note: "必點：半熟蛋蔥油餅" },
@@ -353,18 +354,15 @@
       { name: "家咖哩", address: "花蓮縣花蓮市中美路106號", category: "餐廳", note: "老宅好氣氛，南洋風味咖哩" }
     ];
 
-    // Application State
     let foodItems = [];
-    let currentStatusFilter = 'ALL'; // 'ALL', 'WANT', 'VISITED'
+    let currentStatusFilter = 'ALL';
 
-    // DOM Elements
     const foodListContainer = document.getElementById('foodList');
     const emptyState = document.getElementById('emptyState');
     const searchInput = document.getElementById('searchInput');
     const categoryFilter = document.getElementById('categoryFilter');
     const quickAddChips = document.getElementById('quickAddChips');
 
-    // Modal DOM Elements
     const itemModal = document.getElementById('itemModal');
     const modalTitle = document.getElementById('modalTitle');
     const foodForm = document.getElementById('foodForm');
@@ -377,7 +375,6 @@
     const itemVisited = document.getElementById('itemVisited');
     const autocompleteDropdown = document.getElementById('autocompleteDropdown');
 
-    // Share Modal
     const shareModal = document.getElementById('shareModal');
     const shareTextarea = document.getElementById('shareTextarea');
 
@@ -386,14 +383,13 @@
       return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
     }
 
-    // Initialize App
     function init() {
       listenToFirebase();
-      renderQuickChips();
+      renderRandomChips();
       bindEvents();
     }
 
-    // ===== 2. 即時連線 Firebase 監聽 (即時同步所有人) =====
+    // ===== 2. 即時連線 Firebase 監聽 =====
     function listenToFirebase() {
       collectionRef.orderBy('orderIndex', 'asc').onSnapshot((snapshot) => {
         foodItems = [];
@@ -442,9 +438,14 @@
       }, 2500);
     }
 
-    function renderQuickChips() {
-      quickAddChips.innerHTML = PRESET_HUALIEN_DATABASE.map(spot => `
-        <button type="button" onclick="quickAddSpot('${spot.name}')" class="text-xs bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg transition-all flex items-center gap-1">
+    // ===== 熱門名店「換一批」隨機渲染功能 =====
+    function renderRandomChips() {
+      // 隨機抽選 6-8 個不重複的熱門店家
+      const shuffled = [...PRESET_HUALIEN_DATABASE].sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, 7);
+
+      quickAddChips.innerHTML = selected.map(spot => `
+        <button type="button" onclick="quickAddSpot('${spot.name}')" class="text-xs bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 font-medium shadow-2xs">
           <i class="fa-solid fa-plus text-[10px] text-teal-500"></i>
           <span>${spot.name}</span>
         </button>
@@ -461,7 +462,7 @@
         return;
       }
 
-      const newItem = {
+      await collectionRef.add({
         name: spot.name,
         category: spot.category || '小吃',
         address: spot.address || '',
@@ -469,9 +470,7 @@
         rating: 5,
         visited: false,
         orderIndex: Date.now()
-      };
-
-      await collectionRef.add(newItem);
+      });
       showToast(`已新增「${spot.name}」至清單！`);
     };
 
@@ -512,10 +511,7 @@
         return `
           <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/90 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group ${item.visited ? 'bg-slate-50/80' : ''}">
             
-            <!-- Main Content Area -->
             <div class="flex items-start gap-3 flex-1 min-w-0">
-              
-              <!-- Checkbox -->
               <button onclick="toggleVisited('${item.id}')" title="${item.visited ? '標記為未吃' : '標記為已吃'}" class="mt-1 text-lg transition-transform active:scale-75">
                 ${item.visited 
                   ? '<i class="fa-solid fa-circle-check text-emerald-500"></i>' 
@@ -553,10 +549,7 @@
               </div>
             </div>
 
-            <!-- Action Buttons & Sequence Ordering -->
             <div class="flex sm:flex-col items-center justify-end gap-2 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 shrink-0">
-              
-              <!-- 上下順序調整按鈕 -->
               <div class="flex items-center bg-slate-100 p-1 rounded-xl">
                 <button onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled class="text-slate-300 cursor-not-allowed px-2 py-0.5"' : 'class="text-slate-600 hover:text-teal-600 px-2 py-0.5"'} title="向上移">
                   <i class="fa-solid fa-chevron-up text-xs"></i>
@@ -566,7 +559,6 @@
                 </button>
               </div>
 
-              <!-- 導航與編輯管理 -->
               <div class="flex items-center gap-1">
                 <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" 
                    class="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg text-xs font-bold transition-all flex items-center gap-1">
@@ -580,7 +572,6 @@
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
               </div>
-
             </div>
 
           </div>
@@ -601,6 +592,7 @@
     function bindEvents() {
       searchInput.addEventListener('input', renderFoodList);
       categoryFilter.addEventListener('change', renderFoodList);
+      document.getElementById('refreshChipsBtn').addEventListener('click', renderRandomChips);
 
       const statusBtnAll = document.getElementById('statusFilterAll');
       const statusBtnWant = document.getElementById('statusFilterWant');
@@ -627,8 +619,15 @@
       document.getElementById('closeModalBtn').addEventListener('click', closeModal);
       document.getElementById('cancelFormBtn').addEventListener('click', closeModal);
 
+      // ===== 1. 智慧感應輸入與自動帶入邏輯 =====
       itemName.addEventListener('input', handleNameInput);
-      document.getElementById('geoLookupBtn').addEventListener('click', autoFillPresetAddress);
+      
+      // 點擊畫面其他地方關閉下拉感應選單
+      document.addEventListener('click', (e) => {
+        if (!itemName.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
+          autocompleteDropdown.classList.add('hidden');
+        }
+      });
 
       foodForm.addEventListener('submit', handleFormSubmit);
 
@@ -637,7 +636,48 @@
       document.getElementById('copyShareBtn').addEventListener('click', copyShareText);
     }
 
-    // ===== 3. 上下調整順序 (即時同步) =====
+    // 處理名稱輸入時的智慧感應跳出清單
+    function handleNameInput() {
+      const val = itemName.value.trim().toLowerCase();
+      if (!val) {
+        autocompleteDropdown.classList.add('hidden');
+        return;
+      }
+
+      const matches = PRESET_HUALIEN_DATABASE.filter(s => s.name.toLowerCase().includes(val));
+
+      if (matches.length > 0) {
+        autocompleteDropdown.innerHTML = matches.map(spot => `
+          <div onclick="selectPresetOption('${escapeHtml(spot.name)}')" class="px-4 py-3 hover:bg-teal-50 cursor-pointer flex items-center justify-between transition-colors">
+            <div>
+              <div class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                <i class="fa-solid fa-utensils text-teal-500 text-xs"></i> ${escapeHtml(spot.name)}
+              </div>
+              <div class="text-slate-400 text-xs font-mono mt-0.5">📍 ${escapeHtml(spot.address)}</div>
+            </div>
+            <span class="text-[11px] bg-teal-100 text-teal-700 font-bold px-2 py-0.5 rounded-md">點擊帶入</span>
+          </div>
+        `).join('');
+        autocompleteDropdown.classList.remove('hidden');
+      } else {
+        autocompleteDropdown.classList.add('hidden');
+      }
+    }
+
+    // 點擊感應清單項目後，一次自動帶入地址、分類、備註
+    window.selectPresetOption = function(spotName) {
+      const spot = PRESET_HUALIEN_DATABASE.find(s => s.name === spotName);
+      if (spot) {
+        itemName.value = spot.name;
+        itemAddress.value = spot.address;
+        if (spot.category) itemCategory.value = spot.category;
+        if (spot.note && !itemNote.value) itemNote.value = spot.note;
+        showToast(`已自動感應帶入「${spot.name}」的資料！`);
+      }
+      autocompleteDropdown.classList.add('hidden');
+    };
+
+    // 順序調整
     window.moveItem = async function(index, direction) {
       const targetIndex = index + direction;
       if (targetIndex < 0 || targetIndex >= foodItems.length) return;
@@ -672,62 +712,6 @@
         showToast(`已成功刪除「${item.name}」`);
       }
     };
-
-    function handleNameInput() {
-      const val = itemName.value.trim().toLowerCase();
-      if (!val) {
-        autocompleteDropdown.classList.add('hidden');
-        return;
-      }
-
-      const matches = PRESET_HUALIEN_DATABASE.filter(s => s.name.toLowerCase().includes(val));
-
-      if (matches.length > 0) {
-        autocompleteDropdown.innerHTML = matches.map(spot => `
-          <div onclick="selectPresetOption('${spot.name}')" class="px-4 py-2 hover:bg-teal-50 cursor-pointer flex items-center justify-between border-b border-slate-100 last:border-0 text-xs">
-            <span class="font-bold text-slate-800">${spot.name}</span>
-            <span class="text-slate-400 font-mono text-[11px]">${spot.address}</span>
-          </div>
-        `).join('');
-        autocompleteDropdown.classList.remove('hidden');
-      } else {
-        autocompleteDropdown.classList.add('hidden');
-      }
-
-      const exactMatch = PRESET_HUALIEN_DATABASE.find(s => s.name === itemName.value.trim());
-      if (exactMatch && !itemAddress.value) {
-        itemAddress.value = exactMatch.address;
-        if (exactMatch.category) itemCategory.value = exactMatch.category;
-      }
-    }
-
-    window.selectPresetOption = function(spotName) {
-      const spot = PRESET_HUALIEN_DATABASE.find(s => s.name === spotName);
-      if (spot) {
-        itemName.value = spot.name;
-        itemAddress.value = spot.address;
-        if (spot.category) itemCategory.value = spot.category;
-        if (spot.note && !itemNote.value) itemNote.value = spot.note;
-      }
-      autocompleteDropdown.classList.add('hidden');
-    };
-
-    function autoFillPresetAddress() {
-      const currentName = itemName.value.trim();
-      if (!currentName) {
-        showToast("請先輸入店家名稱再嘗試自動補全！", false);
-        return;
-      }
-
-      const match = PRESET_HUALIEN_DATABASE.find(s => s.name.includes(currentName) || currentName.includes(s.name));
-      if (match) {
-        itemAddress.value = match.address;
-        if (match.category) itemCategory.value = match.category;
-        showToast(`已找到並帶入「${match.name}」的花蓮地址！`);
-      } else {
-        showToast("熱門花蓮資料庫無精確匹配，請手動輸入地址。", false);
-      }
-    }
 
     function openAddModal() {
       modalTitle.innerHTML = `<i class="fa-solid fa-utensils text-yellow-400"></i><span>新增美食店家</span>`;
