@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>花蓮美食口袋清單 Hualien Food Bucket List</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts - Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Noto Sans TC', 'sans-serif'],
+          },
+          colors: {
+            ocean: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#06b6d4',
+              600: '#0891b2',
+              700: '#0e7490',
+            },
+            coral: {
+              500: '#f97316',
+              600: '#ea580c',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for better aesthetics */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans selection:bg-teal-500 selection:text-white">
+
+  <!-- Header Header -->
+  <header class="bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-white/20 p-2.5 rounded-2xl backdrop-blur-md">
+          <i class="fa-solid font-bold fa-utensils text-xl text-yellow-300"></i>
+        </div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-black tracking-wide flex items-center gap-2">
+            花蓮美食口袋清單
+            <span class="text-xs bg-yellow-400 text-slate-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Hualien Food</span>
+          </h1>
+          <p class="text-xs text-teal-100 mt-0.5">自動地址定位 ‧ 一鍵直達 Google 地圖 ‧ 行程分享</p>
+        </div>
+      </div>
+      
+      <!-- Quick Action Buttons Header -->
+      <div class="flex items-center gap-2">
+        <button id="openShareModalBtn" class="bg-white/10 hover:bg-white/20 active:scale-95 transition-all text-white p-2.5 sm:px-3.5 sm:py-2 rounded-xl flex items-center gap-1.5 text-sm font-medium border border-white/20">
+          <i class="fa-solid fa-share-nodes text-yellow-300"></i>
+          <span class="hidden sm:inline">分享 / LINE 匯出</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- Preset Recommendations Bar / Chips -->
+    <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+          <i class="fa-solid fa-fire text-orange-500"></i> 熱門花蓮名店快速新增 (點擊帶入)
+        </h2>
+        <span class="text-xs text-slate-400">點擊店家名稱自動填寫地址</span>
+      </div>
+      <div id="quickAddChips" class="flex flex-wrap gap-2 pt-1 max-h-28 overflow-y-auto">
+        <!-- Preset items dynamically rendered here -->
+      </div>
+    </section>
+
+    <!-- Search, Filter & Stats Toolbar -->
+    <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-3">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+        
+        <!-- Search Input -->
+        <div class="relative md:col-span-5">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input type="text" id="searchInput" placeholder="搜尋店家名稱、地址、備註..." 
+            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all">
+        </div>
+
+        <!-- Category Filter -->
+        <div class="md:col-span-4">
+          <select id="categoryFilter" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all text-slate-700">
+            <option value="ALL">所有分類 (全部)</option>
+            <option value="小吃">🥟 小吃</option>
+            <option value="麵食">🍜 麵食 / 扁食</option>
+            <option value="甜點">🍧 甜點 / 冰品</option>
+            <option value="飲料">🥤 飲料 / 茶飲</option>
+            <option value="餐廳">🍣 餐廳 / 正餐</option>
+            <option value="宵夜">🌙 宵夜 / 炸物</option>
+            <option value="伴手禮">🎁 伴手禮</option>
+            <option value="其他">✨ 其他</option>
+          </select>
+        </div>
+
+        <!-- Status Filter Tab -->
+        <div class="md:col-span-3 flex rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs font-medium">
+          <button id="statusFilterAll" class="flex-1 py-1.5 rounded-lg text-center transition-all bg-white font-bold text-teal-700 shadow-sm">全部</button>
+          <button id="statusFilterWant" class="flex-1 py-1.5 rounded-lg text-center text-slate-600 hover:text-slate-900 transition-all">想吃</button>
+          <button id="statusFilterVisited" class="flex-1 py-1.5 rounded-lg text-center text-slate-600 hover:text-slate-900 transition-all">已吃</button>
+        </div>
+
+      </div>
+
+      <!-- Stats Bar & Add Button -->
+      <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500">
+        <div class="flex items-center gap-3">
+          <span>總計: <strong id="totalCount" class="text-slate-800">0</strong> 間</span>
+          <span>•</span>
+          <span class="text-emerald-600 font-medium">已踩點: <strong id="visitedCount">0</strong></span>
+          <span>•</span>
+          <span class="text-amber-600 font-medium">待解鎖: <strong id="wantCount">0</strong></span>
+        </div>
+
+        <button id="openAddModalBtn" class="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 active:scale-95 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-teal-500/20 flex items-center gap-2 transition-all">
+          <i class="fa-solid fa-circle-plus"></i>
+          <span>新增美食</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Food Cards List Container -->
+    <section>
+      <div id="foodList" class="space-y-3">
+        <!-- Dynamic list of items inserted via JS -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="hidden text-center py-12 px-4 bg-white rounded-2xl border border-dashed border-slate-300">
+        <div class="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+          <i class="fa-solid fa-map-location-dot"></i>
+        </div>
+        <h3 class="text-base font-bold text-slate-700">找不到符合的美食店家</h3>
+        <p class="text-xs text-slate-400 mt-1">嘗試調整搜尋關鍵字，或直接點選上方「新增美食」按鈕！</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Add / Edit Modal -->
+  <div id="itemModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+      
+      <!-- Modal Header -->
+      <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+        <h3 id="modalTitle" class="font-bold text-lg flex items-center gap-2">
+          <i class="fa-solid fa-utensils text-yellow-400"></i>
+          <span>新增美食店家</span>
+        </h3>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-white p-1 rounded-lg transition-colors">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <!-- Modal Form Body -->
+      <form id="foodForm" class="p-6 space-y-4 overflow-y-auto flex-1 text-sm">
+        <input type="hidden" id="editItemId" value="">
+
+        <!-- Name with Auto-Suggest -->
+        <div class="space-y-1.5 relative">
+          <label class="font-bold text-slate-700 flex items-center justify-between">
+            <span>店家名稱 <span class="text-rose-500">*</span></span>
+            <span class="text-[11px] text-teal-600 font-normal"><i class="fa-solid fa-wand-magic-sparkles"></i> 輸入名稱將試圖自動帶入地址</span>
+          </label>
+          <div class="relative">
+            <input type="text" id="itemName" required placeholder="例如：花蓮香扁食" 
+              class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all font-medium">
+            <div id="autocompleteDropdown" class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-slate-200 z-20 max-h-48 overflow-y-auto hidden">
+              <!-- Autocomplete options generated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Category & Rating Row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="font-bold text-slate-700">美食分類</label>
+            <select id="itemCategory" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium text-slate-700">
+              <option value="小吃">🥟 小吃</option>
+              <option value="麵食">🍜 麵食 / 扁食</option>
+              <option value="甜點">🍧 甜點 / 冰品</option>
+              <option value="飲料">🥤 飲料 / 茶飲</option>
+              <option value="餐廳">🍣 餐廳 / 正餐</option>
+              <option value="宵夜">🌙 宵夜 / 炸物</option>
+              <option value="伴手禮">🎁 伴手禮</option>
+              <option value="其他">✨ 其他</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="font-bold text-slate-700">評分 (選填)</label>
+            <select id="itemRating" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium text-amber-600">
+              <option value="5">⭐⭐⭐⭐⭐ (5.0 超棒)</option>
+              <option value="4">⭐⭐⭐⭐ (4.0 推薦)</option>
+              <option value="3">⭐⭐⭐ (3.0 普通)</option>
+              <option value="2">⭐⭐ (2.0 普普)</option>
+              <option value="1">⭐ (1.0 雷爆)</option>
+              <option value="0" selected>尚無評分</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Address -->
+        <div class="space-y-1.5">
+          <label class="font-bold text-slate-700 flex items-center justify-between">
+            <span>地址</span>
+            <span class="text-[11px] text-slate-400">可留空或手動修改</span>
+          </label>
+          <div class="relative">
+            <input type="text" id="itemAddress" placeholder="例如：花蓮縣花蓮市中山路347號" 
+              class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700">
+            <button type="button" id="geoLookupBtn" title="補全花蓮預設地圖資訊" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded-lg text-slate-600 transition-all">
+              <i class="fa-solid fa-location-crosshairs"></i> 自動填補
+            </button>
+          </div>
+        </div>
+
+        <!-- Note & Recommendation -->
+        <div class="space-y-1.5">
+          <label class="font-bold text-slate-700">心得備註 / 推薦必點</label>
+          <textarea id="itemNote" rows="2" placeholder="例如：必點綜合扁食、紅辣炒手，滷肉飯也很好吃！" 
+            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700 resize-none"></textarea>
+        </div>
+
+        <!-- Visited Status Switch -->
+        <div class="pt-2">
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
+            <input type="checkbox" id="itemVisited" class="w-5 h-5 rounded border-slate-300 text-teal-600 focus:ring-teal-500 transition-all">
+            <span class="font-bold text-slate-800">標記為「已踩點 / 已吃過」</span>
+          </label>
+        </div>
+
+        <!-- Actions -->
+        <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+          <button type="button" id="cancelFormBtn" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 font-bold transition-all">取消</button>
+          <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold shadow-md shadow-teal-500/20 transition-all">儲存美食</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Share / LINE Export Modal -->
+  <div id="shareModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+      
+      <!-- Modal Header -->
+      <div class="bg-teal-600 text-white px-6 py-4 flex items-center justify-between">
+        <h3 class="font-bold text-lg flex items-center gap-2">
+          <i class="fa-solid fa-share-nodes text-yellow-300"></i>
+          <span>匯出花蓮美食行程清單</span>
+        </h3>
+        <button id="closeShareModalBtn" class="text-teal-100 hover:text-white p-1 rounded-lg transition-colors">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <p class="text-xs text-slate-500">
+          此格式包含店家名稱、地址以及 Google 地圖導航連結，可以直接複製文字傳送到 LINE 群組與朋友討論！
+        </p>
+
+        <textarea id="shareTextarea" readonly rows="10" 
+          class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-700 focus:outline-none resize-none leading-relaxed select-all"></textarea>
+
+        <div class="flex items-center justify-between gap-3 pt-2">
+          <span id="copyNotice" class="text-xs font-bold text-emerald-600 hidden flex items-center gap-1">
+            <i class="fa-solid fa-check"></i> 已成功複製到剪貼簿！
+          </span>
+          <div class="flex items-center gap-2 ml-auto">
+            <button id="copyShareBtn" class="bg-teal-600 hover:bg-teal-700 active:scale-95 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-teal-600/20 flex items-center gap-1.5 transition-all">
+              <i class="fa-solid fa-copy"></i> 複製文字
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white text-xs sm:text-sm px-4 py-3 rounded-2xl shadow-2xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2 border border-slate-700">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+    <span id="toastMsg">提示訊息</span>
+  </div>
+
+  <!-- JavaScript Application Logic -->
+  <script>
+    // Preset Built-in Database of popular Hualien Delicacies for Auto-Lookup
+    const PRESET_HUALIEN_DATABASE = [
+      { name: "花蓮香扁食", address: "花蓮縣花蓮市中山路347號", category: "麵食", note: "必點：鮮蝦扁食、綜合扁食" },
+      { name: "炸蛋蔥油餅 黃車", address: "花蓮縣花蓮市復興街102號", category: "小吃", note: "必點：半熟蛋蔥油餅" },
+      { name: "炸蛋蔥油餅 藍車", address: "花蓮縣花蓮市復興街102號", category: "小吃", note: "老字號雙車爭霸" },
+      { name: "廟口紅茶", address: "花蓮縣花蓮市成功街218號", category: "飲料", note: "必點：鋼管紅茶、台式西點(小西餅)" },
+      { name: "耕壽司", address: "花蓮縣花蓮市節約街16-1號", category: "餐廳", note: "必點：炙燒鮭魚握壽司" },
+      { name: "戴記扁食", address: "花蓮縣花蓮市中華路120號", category: "麵食", note: "清爽湯頭古早味" },
+      { name: "公正包子", address: "花蓮縣吉安鄉仁里一街29-1號", category: "小吃", note: "小籠包外皮Q彈" },
+      { name: "周家蒸餃", address: "花蓮縣花蓮市公正街4-2號", category: "小吃", note: "蒸餃肉汁飽滿" },
+      { name: "海埔蚵仔煎", address: "花蓮縣花蓮市自由街88號", category: "小吃", note: "排隊名店，蚵仔新鮮" },
+      { name: "黎明紅茶", address: "花蓮縣花蓮市南京街185號", category: "飲料", note: "懷舊紅茶與傳統早餐" },
+      { name: "單一純賣雞湯米粉", address: "花蓮縣花蓮市中美路67號", category: "麵食", note: "小卷雞湯米粉加泡椒神美味" },
+      { name: "一心泡泡冰", address: "花蓮縣花蓮市中華路66號", category: "甜點", note: "綿密泡泡冰與花生紅豆" },
+      { name: "五霸焦糖包心粉圓", address: "花蓮縣花蓮市正義街60號", category: "甜點", note: "棋盤狀焦糖刨冰" },
+      { name: "正品蚵仔煎", address: "花蓮縣花蓮市民國路88號", category: "小吃", note: "醬汁濃郁，環境舒適" },
+      { name: "蔡記豆花", address: "花蓮縣花蓮市民國路73號", category: "甜點", note: "必點：仙草奶凍、薏仁牛奶" },
+      { name: "短腿阿鹿餅乾 花蓮店", address: "花蓮縣新城鄉博愛路47號", category: "伴手禮", note: "可可風味曲奇餅" },
+      { name: "花蓮縣餅 菩提餅舖", address: "花蓮縣花蓮市中華路1號", category: "伴手禮", note: "必買：奶油酥條" },
+      { name: "曾記麻糬", address: "花蓮縣花蓮市站前路", category: "伴手禮", note: "現包花生與芝麻麻糬" },
+      { name: "家咖哩", address: "花蓮縣花蓮市中美路106號", category: "餐廳", note: "老宅好氣氛，南洋風味咖哩" }
+    ];
+
+    // Initial default list if localStorage empty
+    const DEFAULT_FOOD_ITEMS = [
+      {
+        id: "default-1",
+        name: "花蓮香扁食",
+        category: "麵食",
+        address: "花蓮縣花蓮市中山路347號",
+        note: "必點：鮮蝦扁食、紅辣炒手！湯頭鮮美。",
+        rating: 5,
+        visited: false,
+        createdAt: Date.now() - 3000
+      },
+      {
+        id: "default-2",
+        name: "炸蛋蔥油餅 黃車",
+        category: "小吃",
+        address: "花蓮縣花蓮市復興街102號",
+        note: "一定要點半熟蛋，趁熱吃蛋黃爆漿超讚！",
+        rating: 5,
+        visited: true,
+        createdAt: Date.now() - 2000
+      },
+      {
+        id: "default-3",
+        name: "廟口紅茶",
+        category: "飲料",
+        address: "花蓮縣花蓮市成功街218號",
+        note: "二樓鋼管傳送古早味紅茶，搭配大台式西點。",
+        rating: 4,
+        visited: false,
+        createdAt: Date.now() - 1000
+      },
+      {
+        id: "default-4",
+        name: "耕壽司",
+        category: "餐廳",
+        address: "花蓮縣花蓮市節約街16-1號",
+        note: "超厚炙燒鮭魚握壽司必吃，人多建議提前預約。",
+        rating: 5,
+        visited: false,
+        createdAt: Date.now()
+      }
+    ];
+
+    // Application State
+    let foodItems = [];
+    let currentStatusFilter = 'ALL'; // 'ALL', 'WANT', 'VISITED'
+
+    // DOM Elements
+    const foodListContainer = document.getElementById('foodList');
+    const emptyState = document.getElementById('emptyState');
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const quickAddChips = document.getElementById('quickAddChips');
+
+    // Modal DOM Elements
+    const itemModal = document.getElementById('itemModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const foodForm = document.getElementById('foodForm');
+    const editItemId = document.getElementById('editItemId');
+    const itemName = document.getElementById('itemName');
+    const itemCategory = document.getElementById('itemCategory');
+    const itemAddress = document.getElementById('itemAddress');
+    const itemRating = document.getElementById('itemRating');
+    const itemNote = document.getElementById('itemNote');
+    const itemVisited = document.getElementById('itemVisited');
+    const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+
+    // Share Modal
+    const shareModal = document.getElementById('shareModal');
+    const shareTextarea = document.getElementById('shareTextarea');
+
+    // Helper: Generate Google Maps URL
+    function generateGoogleMapsUrl(name, address) {
+      const query = address ? `${name} ${address}` : `${name} 花蓮`;
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    }
+
+    // Initialize App
+    function init() {
+      loadData();
+      renderQuickChips();
+      renderFoodList();
+      bindEvents();
+    }
+
+    // Load from LocalStorage
+    function loadData() {
+      const saved = localStorage.getItem('hualien_food_list_v1');
+      if (saved) {
+        try {
+          foodItems = JSON.parse(saved);
+        } catch (e) {
+          foodItems = [...DEFAULT_FOOD_ITEMS];
+        }
+      } else {
+        foodItems = [...DEFAULT_FOOD_ITEMS];
+        saveData();
+      }
+    }
+
+    // Save to LocalStorage
+    function saveData() {
+      localStorage.setItem('hualien_food_list_v1', JSON.stringify(foodItems));
+    }
+
+    // Toast Alert Notification
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.textContent = msg;
+      if (isSuccess) {
+        toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-base";
+      } else {
+        toastIcon.className = "fa-solid fa-circle-exclamation text-amber-400 text-base";
+      }
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // Render Popular Quick Add Chips
+    function renderQuickChips() {
+      quickAddChips.innerHTML = PRESET_HUALIEN_DATABASE.map(spot => `
+        <button type="button" onclick="quickAddSpot('${spot.name}')" class="text-xs bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg transition-all flex items-center gap-1">
+          <i class="fa-solid fa-plus text-[10px] text-teal-500"></i>
+          <span>${spot.name}</span>
+        </button>
+      `).join('');
+    }
+
+    // Quick Add Spot Function from Chips
+    window.quickAddSpot = function(spotName) {
+      const spot = PRESET_HUALIEN_DATABASE.find(s => s.name === spotName);
+      if (!spot) return;
+
+      // Check if already exists in list
+      const existing = foodItems.find(i => i.name === spot.name);
+      if (existing) {
+        showToast(`「${spot.name}」已經在您的口袋清單中囉！`, false);
+        return;
+      }
+
+      const newItem = {
+        id: 'item-' + Date.now(),
+        name: spot.name,
+        category: spot.category || '小吃',
+        address: spot.address || '',
+        note: spot.note || '',
+        rating: 5,
+        visited: false,
+        createdAt: Date.now()
+      };
+
+      foodItems.unshift(newItem);
+      saveData();
+      renderFoodList();
+      showToast(`已新增「${spot.name}」至清單！`);
+    };
+
+    // Render Filtered Food List
+    function renderFoodList() {
+      const searchTerm = searchInput.value.trim().toLowerCase();
+      const category = categoryFilter.value;
+
+      // Filtering logic
+      const filtered = foodItems.filter(item => {
+        const matchesSearch = item.name.toLowerCase().includes(searchTerm) || 
+                              (item.address && item.address.toLowerCase().includes(searchTerm)) ||
+                              (item.note && item.note.toLowerCase().includes(searchTerm));
+        
+        const matchesCategory = (category === 'ALL') || (item.category === category);
+
+        let matchesStatus = true;
+        if (currentStatusFilter === 'WANT') matchesStatus = !item.visited;
+        if (currentStatusFilter === 'VISITED') matchesStatus = item.visited;
+
+        return matchesSearch && matchesCategory && matchesStatus;
+      });
+
+      // Update Stats Counter
+      document.getElementById('totalCount').textContent = foodItems.length;
+      document.getElementById('visitedCount').textContent = foodItems.filter(i => i.visited).length;
+      document.getElementById('wantCount').textContent = foodItems.filter(i => !i.visited).length;
+
+      if (filtered.length === 0) {
+        foodListContainer.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      foodListContainer.innerHTML = filtered.map(item => {
+        const mapsUrl = generateGoogleMapsUrl(item.name, item.address);
+        const stars = item.rating > 0 ? '⭐'.repeat(item.rating) : '';
+
+        return `
+          <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/90 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group ${item.visited ? 'bg-slate-50/80' : ''}">
+            
+            <!-- Main Content Area -->
+            <div class="flex items-start gap-3 flex-1 min-w-0">
+              
+              <!-- Checkbox -->
+              <button onclick="toggleVisited('${item.id}')" title="${item.visited ? '標記為未吃' : '標記為已吃'}" class="mt-1 text-lg transition-transform active:scale-75">
+                ${item.visited 
+                  ? '<i class="fa-solid fa-circle-check text-emerald-500"></i>' 
+                  : '<i class="fa-regular fa-circle text-slate-300 hover:text-teal-500"></i>'}
+              </button>
+
+              <div class="flex-1 min-w-0 space-y-1">
+                
+                <!-- Category Badge & Stars -->
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                  <span class="px-2 py-0.5 rounded-md font-bold bg-teal-50 text-teal-700 border border-teal-200/60">
+                    ${getCategoryIcon(item.category)} ${item.category}
+                  </span>
+                  ${stars ? `<span class="text-amber-500 font-bold">${stars}</span>` : ''}
+                  ${item.visited ? `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded">已解鎖</span>` : ''}
+                </div>
+
+                <!-- Store Name linked to Google Maps directly -->
+                <div class="flex items-center gap-2 flex-wrap">
+                  <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" 
+                     class="text-base sm:text-lg font-bold text-slate-900 hover:text-teal-600 transition-colors flex items-center gap-1.5 group/link">
+                    <span class="${item.visited ? 'line-through text-slate-400' : ''}">${escapeHtml(item.name)}</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-xs text-teal-500 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform"></i>
+                  </a>
+                </div>
+
+                <!-- Automated Address Display -->
+                <div class="text-xs text-slate-500 flex items-center gap-1.5 flex-wrap pt-0.5">
+                  <i class="fa-solid fa-location-dot text-rose-500 shrink-0"></i>
+                  <span class="select-all font-mono">${escapeHtml(item.address || '尚未填寫地址 (點擊可導航搜尋)')}</span>
+                </div>
+
+                <!-- Note / Food Recommendation -->
+                ${item.note ? `
+                  <p class="text-xs text-slate-600 bg-slate-100/80 p-2 rounded-xl mt-1.5 border border-slate-200/50 flex items-start gap-1.5">
+                    <i class="fa-regular fa-lightbulb text-amber-500 shrink-0 mt-0.5"></i>
+                    <span class="break-words">${escapeHtml(item.note)}</span>
+                  </p>
+                ` : ''}
+
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex sm:flex-col items-center justify-end gap-2 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 shrink-0">
+              
+              <!-- Direct Map Navigation Button -->
+              <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" 
+                 class="flex-1 sm:flex-none px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <span>導航</span>
+              </a>
+
+              <div class="flex items-center gap-1">
+                <!-- Edit Button -->
+                <button onclick="openEditModal('${item.id}')" title="編輯" class="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-slate-100 rounded-lg transition-colors">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+
+                <!-- Delete Button -->
+                <button onclick="deleteItem('${item.id}')" title="刪除" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Helper: Category Icon Mapper
+    function getCategoryIcon(cat) {
+      const icons = {
+        '小吃': '🥟',
+        '麵食': '🍜',
+        '甜點': '🍧',
+        '飲料': '🥤',
+        '餐廳': '🍣',
+        '宵夜': '🌙',
+        '伴手禮': '🎁',
+        '其他': '✨'
+      };
+      return icons[cat] || '🍽️';
+    }
+
+    // HTML Sanitizer
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        }[m];
+      });
+    }
+
+    // Event Bindings
+    function bindEvents() {
+      // Search and Filter Listeners
+      searchInput.addEventListener('input', renderFoodList);
+      categoryFilter.addEventListener('change', renderFoodList);
+
+      // Status Filter Tabs
+      const statusBtnAll = document.getElementById('statusFilterAll');
+      const statusBtnWant = document.getElementById('statusFilterWant');
+      const statusBtnVisited = document.getElementById('statusFilterVisited');
+
+      function updateStatusTabUI(selected) {
+        currentStatusFilter = selected;
+        [statusBtnAll, statusBtnWant, statusBtnVisited].forEach(btn => {
+          btn.className = "flex-1 py-1.5 rounded-lg text-center text-slate-600 hover:text-slate-900 transition-all";
+        });
+
+        if (selected === 'ALL') statusBtnAll.className = "flex-1 py-1.5 rounded-lg text-center transition-all bg-white font-bold text-teal-700 shadow-sm";
+        if (selected === 'WANT') statusBtnWant.className = "flex-1 py-1.5 rounded-lg text-center transition-all bg-white font-bold text-teal-700 shadow-sm";
+        if (selected === 'VISITED') statusBtnVisited.className = "flex-1 py-1.5 rounded-lg text-center transition-all bg-white font-bold text-teal-700 shadow-sm";
+
+        renderFoodList();
+      }
+
+      statusBtnAll.addEventListener('click', () => updateStatusTabUI('ALL'));
+      statusBtnWant.addEventListener('click', () => updateStatusTabUI('WANT'));
+      statusBtnVisited.addEventListener('click', () => updateStatusTabUI('VISITED'));
+
+      // Modal Open / Close
+      document.getElementById('openAddModalBtn').addEventListener('click', () => openAddModal());
+      document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+      document.getElementById('cancelFormBtn').addEventListener('click', closeModal);
+
+      // Form Auto-Lookup On Input
+      itemName.addEventListener('input', handleNameInput);
+      document.getElementById('geoLookupBtn').addEventListener('click', autoFillPresetAddress);
+
+      // Form Submission
+      foodForm.addEventListener('submit', handleFormSubmit);
+
+      // Share Modal Listeners
+      document.getElementById('openShareModalBtn').addEventListener('click', openShareModal);
+      document.getElementById('closeShareModalBtn').addEventListener('click', closeShareModal);
+      document.getElementById('copyShareBtn').addEventListener('click', copyShareText);
+    }
+
+    // Toggle Visited Status
+    window.toggleVisited = function(id) {
+      const item = foodItems.find(i => i.id === id);
+      if (item) {
+        item.visited = !item.visited;
+        saveData();
+        renderFoodList();
+        showToast(item.visited ? `已將「${item.name}」完成踩點！` : `「${item.name}」移回待吃清單`);
+      }
+    };
+
+    // Delete Item
+    window.deleteItem = function(id) {
+      const item = foodItems.find(i => i.id === id);
+      if (!item) return;
+
+      if (confirm(`確定要刪除「${item.name}」嗎？`)) {
+        foodItems = foodItems.filter(i => i.id !== id);
+        saveData();
+        renderFoodList();
+        showToast(`已成功刪除「${item.name}」`);
+      }
+    };
+
+    // Handle Name Input & Auto-Suggestion / Address Lookup
+    function handleNameInput() {
+      const val = itemName.value.trim().toLowerCase();
+      if (!val) {
+        autocompleteDropdown.classList.add('hidden');
+        return;
+      }
+
+      const matches = PRESET_HUALIEN_DATABASE.filter(s => s.name.toLowerCase().includes(val));
+
+      if (matches.length > 0) {
+        autocompleteDropdown.innerHTML = matches.map(spot => `
+          <div onclick="selectPresetOption('${spot.name}')" class="px-4 py-2 hover:bg-teal-50 cursor-pointer flex items-center justify-between border-b border-slate-100 last:border-0 text-xs">
+            <span class="font-bold text-slate-800">${spot.name}</span>
+            <span class="text-slate-400 font-mono text-[11px]">${spot.address}</span>
+          </div>
+        `).join('');
+        autocompleteDropdown.classList.remove('hidden');
+      } else {
+        autocompleteDropdown.classList.add('hidden');
+      }
+
+      // Exact match auto fill
+      const exactMatch = PRESET_HUALIEN_DATABASE.find(s => s.name === itemName.value.trim());
+      if (exactMatch && !itemAddress.value) {
+        itemAddress.value = exactMatch.address;
+        if (exactMatch.category) itemCategory.value = exactMatch.category;
+      }
+    }
+
+    window.selectPresetOption = function(spotName) {
+      const spot = PRESET_HUALIEN_DATABASE.find(s => s.name === spotName);
+      if (spot) {
+        itemName.value = spot.name;
+        itemAddress.value = spot.address;
+        if (spot.category) itemCategory.value = spot.category;
+        if (spot.note && !itemNote.value) itemNote.value = spot.note;
+      }
+      autocompleteDropdown.classList.add('hidden');
+    };
+
+    function autoFillPresetAddress() {
+      const currentName = itemName.value.trim();
+      if (!currentName) {
+        showToast("請先輸入店家名稱再嘗試自動補全！", false);
+        return;
+      }
+
+      const match = PRESET_HUALIEN_DATABASE.find(s => s.name.includes(currentName) || currentName.includes(s.name));
+      if (match) {
+        itemAddress.value = match.address;
+        if (match.category) itemCategory.value = match.category;
+        showToast(`已找到並帶入「${match.name}」的花蓮地址！`);
+      } else {
+        showToast("熱門花蓮資料庫無精確匹配，請手動輸入地址。", false);
+      }
+    }
+
+    // Modal Control Functions
+    function openAddModal() {
+      modalTitle.innerHTML = `<i class="fa-solid fa-utensils text-yellow-400"></i><span>新增美食店家</span>`;
+      editItemId.value = '';
+      foodForm.reset();
+      itemVisited.checked = false;
+      itemRating.value = "0";
+      autocompleteDropdown.classList.add('hidden');
+      itemModal.classList.remove('hidden');
+      itemName.focus();
+    }
+
+    window.openEditModal = function(id) {
+      const item = foodItems.find(i => i.id === id);
+      if (!item) return;
+
+      modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square text-teal-400"></i><span>編輯美食資料</span>`;
+      editItemId.value = item.id;
+      itemName.value = item.name;
+      itemCategory.value = item.category || '小吃';
+      itemAddress.value = item.address || '';
+      itemRating.value = item.rating || 0;
+      itemNote.value = item.note || '';
+      itemVisited.checked = item.visited || false;
+
+      autocompleteDropdown.classList.add('hidden');
+      itemModal.classList.remove('hidden');
+    };
+
+    function closeModal() {
+      itemModal.classList.add('hidden');
+    }
+
+    // Form Submit Handler
+    function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const id = editItemId.value;
+      const name = itemName.value.trim();
+      const category = itemCategory.value;
+      const address = itemAddress.value.trim();
+      const rating = parseInt(itemRating.value, 10) || 0;
+      const note = itemNote.value.trim();
+      const visited = itemVisited.checked;
+
+      if (!name) {
+        showToast("請輸入店家名稱！", false);
+        return;
+      }
+
+      if (id) {
+        // Edit Existing Item
+        const index = foodItems.findIndex(i => i.id === id);
+        if (index !== -1) {
+          foodItems[index] = {
+            ...foodItems[index],
+            name,
+            category,
+            address,
+            rating,
+            note,
+            visited
+          };
+          showToast(`已成功更新「${name}」！`);
+        }
+      } else {
+        // Add New Item
+        const newItem = {
+          id: 'item-' + Date.now(),
+          name,
+          category,
+          address,
+          rating,
+          note,
+          visited,
+          createdAt: Date.now()
+        };
+        foodItems.unshift(newItem);
+        showToast(`已新增「${name}」至清單！`);
+      }
+
+      saveData();
+      renderFoodList();
+      closeModal();
+    }
+
+    // Share Modal & LINE Formatting
+    function openShareModal() {
+      if (foodItems.length === 0) {
+        showToast("目前沒有任何美食清單可供分享！", false);
+        return;
+      }
+
+      let text = `🌊 【花蓮美食口袋清單】 🌊\n`;
+      text += `📅 整理時間: ${new Date().toLocaleDateString('zh-TW')}\n`;
+      text += `--------------------------\n\n`;
+
+      foodItems.forEach((item, idx) => {
+        const mapsUrl = generateGoogleMapsUrl(item.name, item.address);
+        const status = item.visited ? '✅已吃' : '📌想吃';
+        text += `${idx + 1}. [${item.category}] ${item.name} (${status})\n`;
+        if (item.address) text += `📍 地址: ${item.address}\n`;
+        if (item.note) text += `💡 備註: ${item.note}\n`;
+        text += `🗺️ Google地圖: ${mapsUrl}\n\n`;
+      });
+
+      text += `--------------------------\n`;
+      text += `一起出發去花蓮吃美食吧！😋`;
+
+      shareTextarea.value = text;
+      document.getElementById('copyNotice').classList.add('hidden');
+      shareModal.classList.remove('hidden');
+    }
+
+    function closeShareModal() {
+      shareModal.classList.add('hidden');
+    }
+
+    function copyShareText() {
+      shareTextarea.select();
+      
+      try {
+        // execCommand fallback for seamless iframe & mobile web compatibility
+        document.execCommand('copy');
+        const copyNotice = document.getElementById('copyNotice');
+        copyNotice.classList.remove('hidden');
+        showToast("已成功複製文字行程表，可貼上發送給朋友！");
+      } catch (err) {
+        showToast("複製失敗，請手動選取文字複製", false);
+      }
+    }
+
+    // Run Initialization on DOM Ready
+    window.onload = init;
+  </script>
+</body>
+</html>
