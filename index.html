@@ -79,20 +79,9 @@
       </button>
     </div>
 
-    <!-- ==================== TAB 1: 美食清單區塊 (維持不變) ==================== -->
+    <!-- ==================== TAB 1: 美食清單區塊 ==================== -->
     <div id="foodTabContent" class="space-y-6">
-      <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-            <i class="fa-solid fa-fire text-orange-500"></i> 熱門花蓮名店快速新增 (點擊帶入)
-          </h2>
-          <button type="button" id="refreshChipsBtn" class="text-xs text-teal-600 hover:text-teal-700 font-bold flex items-center gap-1 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-lg transition-all">
-            <i class="fa-solid fa-rotate"></i> 換一批
-          </button>
-        </div>
-        <div id="quickAddChips" class="flex flex-wrap gap-2 pt-1 max-h-28 overflow-y-auto"></div>
-      </section>
-
+      <!-- Search, Filter & Stats Toolbar -->
       <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-3">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
           <div class="relative md:col-span-5">
@@ -138,6 +127,7 @@
         </div>
       </section>
 
+      <!-- Food Cards List Container -->
       <section>
         <div id="foodList" class="space-y-3">
           <div class="text-center py-12 text-slate-400 bg-white rounded-2xl border border-slate-200">
@@ -283,7 +273,7 @@
     </div>
   </div>
 
-  <!-- Add / Edit Trip Modal (行程專用) -->
+  <!-- Add / Edit Trip Modal (行程專用 - 滾動式時間選擇器) -->
   <div id="tripModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
       <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
@@ -299,22 +289,58 @@
       <form id="tripForm" class="p-6 space-y-4 overflow-y-auto flex-1 text-sm">
         <input type="hidden" id="editTripId" value="">
 
-        <!-- 優化後的時間快速點選區 -->
-        <div class="space-y-1.5">
-          <label class="font-bold text-slate-700 flex items-center justify-between">
-            <span>時段 / 時間 (點擊下方快速填入，或直接輸入)</span>
+        <!-- 優化後的時間選擇器區塊 -->
+        <div class="space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+          <label class="font-bold text-slate-700 flex items-center justify-between text-xs uppercase tracking-wider">
+            <span>選擇時段與時間</span>
+            <span class="text-teal-600 font-normal">可直接上下滑動或點選數值</span>
           </label>
-          <div class="flex flex-wrap gap-1.5 mb-2">
-            <button type="button" onclick="setTripTime('上午 09:00')" class="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-medium transition-all">🌅 上午 09:00</button>
-            <button type="button" onclick="setTripTime('上午 11:00')" class="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-medium transition-all">🕛 上午 11:00</button>
-            <button type="button" onclick="setTripTime('中午 12:30')" class="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-medium transition-all">🍜 中午 12:30</button>
-            <button type="button" onclick="setTripTime('下午 14:30')" class="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-medium transition-all">☕ 下午 14:30</button>
-            <button type="button" onclick="setTripTime('下午 16:30')" class="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-medium transition-all">🌇 下午 16:30</button>
-            <button type="button" onclick="setTripTime('晚上 18:30')" class="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-medium transition-all">🌙 晚上 18:30</button>
-            <button type="button" onclick="setTripTime('晚上 20:30')" class="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-medium transition-all">✨ 晚上 20:30</button>
+
+          <!-- 時段快速按鈕 -->
+          <div class="flex flex-wrap gap-1.5 pb-2 border-b border-slate-200/60">
+            <button type="button" onclick="setPeriod('上午')" class="px-2.5 py-1 bg-white hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-2xs">🌅 上午</button>
+            <button type="button" onclick="setPeriod('中午')" class="px-2.5 py-1 bg-white hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-2xs">🍜 中午</button>
+            <button type="button" onclick="setPeriod('下午')" class="px-2.5 py-1 bg-white hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-2xs">☕ 下午</button>
+            <button type="button" onclick="setPeriod('晚上')" class="px-2.5 py-1 bg-white hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-2xs">🌙 晚上</button>
           </div>
-          <input type="text" id="tripTimeInput" required placeholder="例如：下午 02:00 或 14:00" 
-            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all font-medium">
+
+          <!-- 上下滑動選擇器容器 (Picker) -->
+          <div class="grid grid-cols-3 gap-2 pt-1">
+            <!-- 上午/下午區分 -->
+            <div>
+              <label class="text-[11px] text-slate-500 font-medium block mb-1">時段</label>
+              <select id="pickerAmPm" class="w-full px-2 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm text-teal-700 focus:ring-2 focus:ring-teal-500">
+                <option value="上午">上午</option>
+                <option value="中午">中午</option>
+                <option value="下午">下午</option>
+                <option value="晚上">晚上</option>
+              </select>
+            </div>
+            <!-- 小時滾動/下拉 -->
+            <div>
+              <label class="text-[11px] text-slate-500 font-medium block mb-1">小時 (1-12)</label>
+              <select id="pickerHour" class="w-full px-2 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 focus:ring-2 focus:ring-teal-500">
+                <option value="01">01 點</option><option value="02">02 點</option><option value="03">03 點</option><option value="04">04 點</option>
+                <option value="05">05 點</option><option value="06">06 點</option><option value="07">07 點</option><option value="08">08 點</option>
+                <option value="09">09 點</option><option value="10" selected>10 點</option><option value="11">11 點</option><option value="12">12 點</option>
+              </select>
+            </div>
+            <!-- 分鐘滾動/下拉 -->
+            <div>
+              <label class="text-[11px] text-slate-500 font-medium block mb-1">分鐘</label>
+              <select id="pickerMinute" class="w-full px-2 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 focus:ring-2 focus:ring-teal-500">
+                <option value="00" selected>00 分</option>
+                <option value="10">10 分</option>
+                <option value="15">15 分</option>
+                <option value="20">20 分</option>
+                <option value="30">30 分</option>
+                <option value="40">40 分</option>
+                <option value="45">45 分</option>
+                <option value="50">50 分</option>
+              </select>
+            </div>
+          </div>
+          <input type="hidden" id="tripTimeInput">
         </div>
 
         <div class="space-y-1.5">
@@ -344,7 +370,7 @@
 
         <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
           <button type="button" id="cancelTripFormBtn" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 font-bold transition-all">取消</button>
-          <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-teal-700 text-white font-bold shadow-md shadow-teal-500/20 transition-all">儲存行程</button>
+          <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold shadow-md shadow-teal-500/20 transition-all">儲存行程</button>
         </div>
       </form>
     </div>
@@ -409,15 +435,6 @@
     const tripCollectionRef = db.collection('hualien_shared_trips');
     const metaCollectionRef = db.collection('hualien_shared_meta');
 
-    const PRESET_HUALIEN_DATABASE = [
-      { name: "南華麵店", address: "花蓮縣吉安鄉中華路二段199號", category: "麵食", note: "必點：招牌煎麵、各式滷味" },
-      { name: "慶豐麵店", address: "花蓮縣吉安鄉吉安路六號", category: "麵食", note: "必點：煙燻滷味、切仔麵" },
-      { name: "花蓮香扁食", address: "花蓮縣花蓮市中山路347號", category: "麵食", note: "必點：鮮蝦扁食" },
-      { name: "炸蛋蔥油餅", address: "花蓮縣花蓮市復興街102號", category: "小吃", note: "半熟蛋蔥油餅" },
-      { name: "廟口紅茶", address: "花蓮縣花蓮市成功街218號", category: "飲料", note: "鋼管紅茶" },
-      { name: "蔡記豆花", address: "花蓮縣花蓮市民國路73號", category: "甜點", note: "仙草奶凍" }
-    ];
-
     let foodItems = [];
     let tripItems = [];
     let dayDates = {};
@@ -434,7 +451,6 @@
     const emptyState = document.getElementById('emptyState');
     const searchInput = document.getElementById('searchInput');
     const categoryFilter = document.getElementById('categoryFilter');
-    const quickAddChips = document.getElementById('quickAddChips');
 
     const itemModal = document.getElementById('itemModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -450,6 +466,9 @@
     const tripModal = document.getElementById('tripModal');
     const tripForm = document.getElementById('tripForm');
     const editTripId = document.getElementById('editTripId');
+    const pickerAmPm = document.getElementById('pickerAmPm');
+    const pickerHour = document.getElementById('pickerHour');
+    const pickerMinute = document.getElementById('pickerMinute');
     const tripTimeInput = document.getElementById('tripTimeInput');
     const tripName = document.getElementById('tripName');
     const tripAddress = document.getElementById('tripAddress');
@@ -469,7 +488,6 @@
       listenToFirebase();
       listenToTripFirebase();
       listenToMetaFirebase();
-      renderRandomChips();
       bindEvents();
     }
 
@@ -539,25 +557,6 @@
         toast.classList.add('translate-y-20', 'opacity-0');
       }, 2500);
     }
-
-    function renderRandomChips() {
-      const shuffled = [...PRESET_HUALIEN_DATABASE].sort(() => 0.5 - Math.random());
-      quickAddChips.innerHTML = shuffled.slice(0, 5).map(spot => `
-        <button type="button" onclick="quickAddSpot('${escapeHtml(spot.name).replace(/'/g, "\\'")}')" class="text-xs bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 font-medium">
-          <i class="fa-solid fa-plus text-[10px] text-teal-500"></i>
-          <span>${escapeHtml(spot.name)}</span>
-        </button>
-      `).join('');
-    }
-
-    window.quickAddSpot = async function(spotName) {
-      const spot = PRESET_HUALIEN_DATABASE.find(s => s.name === spotName);
-      if (!spot) return;
-      await collectionRef.add({
-        name: spot.name, category: spot.category, address: spot.address, note: spot.note, rating: 5, visited: false, orderIndex: Date.now()
-      });
-      showToast(`已新增「${spot.name}」至清單！`);
-    };
 
     function renderFoodList() {
       const searchTerm = searchInput.value.trim().toLowerCase();
@@ -688,8 +687,8 @@
       renderTripList();
     };
 
-    window.setTripTime = function(timeStr) {
-      tripTimeInput.value = timeStr;
+    window.setPeriod = function(period) {
+      pickerAmPm.value = period;
     };
 
     function escapeHtml(str) {
@@ -716,7 +715,6 @@
 
       searchInput.addEventListener('input', renderFoodList);
       categoryFilter.addEventListener('change', renderFoodList);
-      document.getElementById('refreshChipsBtn').addEventListener('click', renderRandomChips);
 
       document.getElementById('openAddModalBtn').addEventListener('click', () => openAddModal());
       document.getElementById('closeModalBtn').addEventListener('click', closeFoodModal);
@@ -736,13 +734,6 @@
           return;
         }
         showToast("正在自動搜尋地址...", true);
-        const found = PRESET_HUALIEN_DATABASE.find(s => s.name.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(s.name.toLowerCase()));
-        if (found) {
-          itemAddress.value = found.address;
-          if (found.note && !itemNote.value) itemNote.value = found.note;
-          showToast(`已自動帶入「${found.name}」地址！`);
-          return;
-        }
         try {
           const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name + " 花蓮")}&format=json&limit=1&accept-language=zh-TW`);
           const data = await res.json();
@@ -786,12 +777,6 @@
           return;
         }
         showToast("正在自動搜尋地址...", true);
-        const found = PRESET_HUALIEN_DATABASE.find(s => s.name.toLowerCase().includes(name.toLowerCase()));
-        if (found) {
-          tripAddress.value = found.address;
-          showToast(`已自動帶入「${found.name}」地址！`);
-          return;
-        }
         try {
           const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name + " 花蓮")}&format=json&limit=1&accept-language=zh-TW`);
           const data = await res.json();
@@ -858,7 +843,9 @@
     function openAddTripModal() {
       editTripId.value = '';
       tripForm.reset();
-      tripTimeInput.value = "上午 11:00";
+      pickerAmPm.value = "上午";
+      pickerHour.value = "10";
+      pickerMinute.value = "00";
       tripModal.classList.remove('hidden');
       tripName.focus();
     }
@@ -870,7 +857,18 @@
       tripName.value = item.name || '';
       tripAddress.value = item.address || '';
       tripNote.value = item.note || '';
-      tripTimeInput.value = item.time || '';
+
+      // 解析儲存的時間字串 (例如 "上午 10:30")
+      const parts = (item.time || '').split(' ');
+      if (parts.length >= 2) {
+        pickerAmPm.value = parts[0];
+        const hm = parts[1].split(':');
+        if (hm.length === 2) {
+          pickerHour.value = hm[0];
+          pickerMinute.value = hm[1];
+        }
+      }
+
       tripModal.classList.remove('hidden');
     };
 
@@ -902,9 +900,11 @@
     async function handleTripFormSubmit(e) {
       e.preventDefault();
       const id = editTripId.value;
+      const timeStr = `${pickerAmPm.value} ${pickerHour.value}:${pickerMinute.value}`;
+
       const data = {
         day: currentDay,
-        time: tripTimeInput.value.trim(),
+        time: timeStr,
         name: tripName.value.trim(),
         address: tripAddress.value.trim(),
         note: tripNote.value.trim()
