@@ -253,7 +253,12 @@
         </div>
 
         <div class="space-y-1.5">
-          <label class="font-bold text-slate-700">心得備註 / 推薦必點</label>
+          <label class="font-bold text-slate-700 flex items-center justify-between gap-2">
+            <span>心得備註 / 推薦必點</span>
+            <button type="button" id="googleReviewLookupBtn" class="text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5">
+              <i class="fa-brands fa-google"></i> 查 Google 評論
+            </button>
+          </label>
           <textarea id="itemNote" rows="2" placeholder="例如：必點招牌煎麵！" 
             class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700 resize-none"></textarea>
         </div>
@@ -473,8 +478,46 @@
     const dayTabsContainer = document.getElementById('dayTabsContainer');
 
     function generateGoogleMapsUrl(name, address) {
+      // 優先用店名搜尋，避免不完整/錯誤地址把 Google Maps 導向錯店。
       const query = address ? `${name} ${address}` : `${name} 花蓮`;
       return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    }
+
+    function getStreetAddress(result) {
+      // 顯示完整行政區 + 道路門牌，例如「花蓮縣花蓮市中山路123號」。
+      const a = result && result.address ? result.address : {};
+      const county = a.county || a.state || '花蓮縣';
+      const district = a.city || a.town || a.municipality || a.village || a.suburb || '花蓮市';
+      const road = a.road || a.pedestrian || a.residential || a.footway || '';
+      const house = a.house_number || '';
+      const unit = [a.house_name, a.building].filter(Boolean).join('');
+      const streetLine = `${road}${house ? house + '號' : ''}${unit ? ' ' + unit : ''}`.trim();
+      if (streetLine) return `${county}${district}${streetLine}`;
+      const display = (result && result.display_name) || '';
+      const parts = display.split(',').map(x => x.trim()).filter(Boolean);
+      const street = parts.find(x => /(路|街|大道|巷|弄|段|號)/.test(x) && !/(花蓮縣|吉安鄉|新城鄉|壽豐鄉|台灣|臺灣)/.test(x));
+      return street ? `${county}${district}${street}` : '';
+    }
+
+    async function lookupPlaceAddress(name) {
+      const queries = [
+        `${name}, 花蓮縣, 台灣`,
+        `${name} 花蓮`,
+        `${name}`
+      ];
+      for (const q of queries) {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=jsonv2&addressdetails=1&limit=5&countrycodes=tw&accept-language=zh-TW`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'zh-TW' } });
+        if (!res.ok) continue;
+        const results = await res.json();
+        if (!Array.isArray(results) || !results.length) continue;
+        // 優先挑選含門牌的道路地址；其次挑選道路地址，避免拿到縣市/地標大範圍位置。
+        const ranked = results.map(r => ({ r, addr: getStreetAddress(r), score: (r.address && r.address.house_number ? 4 : 0) + (r.address && (r.address.road || r.address.pedestrian) ? 2 : 0) + (/花蓮/.test(r.display_name || '') ? 1 : 0) }))
+          .filter(x => x.addr)
+          .sort((a, b) => b.score - a.score);
+        if (ranked.length) return ranked[0].addr;
+      }
+      return '';
     }
 
     function init() {
@@ -733,20 +776,33 @@
           itemName.focus();
           return;
         }
-        showToast("正在自動搜尋地址...", true);
+        showToast("正在搜尋店家道路地址...", true);
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name + " 花蓮")}&format=json&limit=1&accept-language=zh-TW`);
-          const data = await res.json();
-          if (data && data.length > 0) {
-            let addr = (data[0].display_name || '').replace(/, 台灣.*$/, '').replace(/台灣/, '').trim();
+          const addr = await lookupPlaceAddress(name);
+          if (addr) {
             itemAddress.value = addr;
-            showToast("成功自動抓取地址！");
+            showToast(`已帶入地址：${addr}`);
           } else {
-            showToast("找不到精確地址，請手動填寫", false);
+            showToast("地圖資料找不到道路/門牌，已開啟 Google Maps 供你確認店家", false);
+            window.open(generateGoogleMapsUrl(name, ''), '_blank', 'noopener');
           }
         } catch (err) {
-          showToast("自動抓取失敗", false);
+          showToast("地址搜尋暫時失敗，已開啟 Google Maps 供你確認", false);
+          window.open(generateGoogleMapsUrl(name, ''), '_blank', 'noopener');
         }
+      });
+
+      document.getElementById('googleReviewLookupBtn').addEventListener('click', () => {
+        const name = itemName.value.trim();
+        if (!name) {
+          showToast("請先輸入店家名稱！", false);
+          itemName.focus();
+          return;
+        }
+        // Google 不允許一般網頁直接跨網域讀取評論內容；先開啟該店 Google Maps 評論搜尋。
+        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' 花蓮')}&query_place_id=&hl=zh-TW`;
+        window.open(url, '_blank', 'noopener');
+        showToast("已開啟 Google Maps，請查看「評論」並將心得貼回備註");
       });
 
       dayDateInput.addEventListener('blur', async () => {
@@ -778,19 +834,19 @@
           tripName.focus();
           return;
         }
-        showToast("正在自動搜尋地址...", true);
+        showToast("正在搜尋景點道路地址...", true);
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name + " 花蓮")}&format=json&limit=1&accept-language=zh-TW`);
-          const data = await res.json();
-          if (data && data.length > 0) {
-            let addr = (data[0].display_name || '').replace(/, 台灣.*$/, '').replace(/台灣/, '').trim();
+          const addr = await lookupPlaceAddress(name);
+          if (addr) {
             tripAddress.value = addr;
-            showToast("成功自動抓取地址！");
+            showToast(`已帶入地址：${addr}`);
           } else {
-            showToast("找不到精確地址", false);
+            showToast("地圖資料找不到道路/門牌，已開啟 Google Maps 供你確認", false);
+            window.open(generateGoogleMapsUrl(name, ''), '_blank', 'noopener');
           }
         } catch (err) {
-          showToast("自動抓取失敗", false);
+          showToast("地址搜尋暫時失敗，已開啟 Google Maps 供你確認", false);
+          window.open(generateGoogleMapsUrl(name, ''), '_blank', 'noopener');
         }
       });
     }
