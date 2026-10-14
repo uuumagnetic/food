@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>花蓮美食口袋清單與行程規劃 Hualien Guide</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts - Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDK (即時同步雲端資料庫) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Noto Sans TC', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans selection:bg-teal-500 selection:text-white pb-12">
+
+  <!-- Header Header -->
+  <header class="bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-white/20 p-2.5 rounded-2xl backdrop-blur-md">
+          <i class="fa-solid font-bold fa-utensils text-xl text-yellow-300"></i>
+        </div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-black tracking-wide flex items-center gap-2">
+            花蓮美食與行程規劃
+            <span class="text-xs bg-yellow-400 text-slate-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Hualien</span>
+          </h1>
+          <p class="text-xs text-teal-100 mt-0.5">智慧分類 ‧ 多日行程與日期安排 ‧ 一鍵導航 ‧ 多人同步</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <div class="hidden sm:flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl border border-white/20 text-xs font-semibold">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          即時連線中
+        </div>
+        <button id="openShareModalBtn" class="bg-white/10 hover:bg-white/20 active:scale-95 transition-all text-white p-2.5 sm:px-3.5 sm:py-2 rounded-xl flex items-center gap-1.5 text-sm font-medium border border-white/20">
+          <i class="fa-solid fa-share-nodes text-yellow-300"></i>
+          <span class="hidden sm:inline">分享 / LINE 匯出</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- Tab Navigation (切換 美食清單 / 行程規劃) -->
+    <div class="flex rounded-2xl bg-slate-200/70 p-1.5 gap-2 border border-slate-300/60 shadow-inner">
+      <button id="tabFoodBtn" class="flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-white text-teal-700 shadow-sm flex items-center justify-center gap-2">
+        <i class="fa-solid fa-utensils"></i> 美食口袋清單
+      </button>
+      <button id="tabTripBtn" class="flex-1 py-3 rounded-xl font-bold text-sm transition-all text-slate-600 hover:text-slate-900 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-calendar-days"></i> 多日行程安排
+      </button>
+    </div>
+
+    <!-- ==================== TAB 1: 美食清單區塊 ==================== -->
+    <div id="foodTabContent" class="space-y-6">
+      <!-- Search, Filter & Stats Toolbar -->
+      <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+          <div class="relative md:col-span-5">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="searchInput" placeholder="搜尋店家名稱、地址、備註..." 
+              class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all">
+          </div>
+
+          <div class="md:col-span-4">
+            <select id="categoryFilter" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all text-slate-700">
+              <option value="ALL">所有分類 (全部)</option>
+              <option value="小吃">🥟 小吃</option>
+              <option value="麵食">🍜 麵食 / 扁食</option>
+              <option value="甜點">🍧 甜點 / 冰品</option>
+              <option value="飲料">🥤 飲料 / 茶飲</option>
+              <option value="餐廳">🍣 餐廳 / 正餐</option>
+              <option value="宵夜">🌙 宵夜 / 炸物</option>
+              <option value="伴手禮">🎁 伴手禮</option>
+              <option value="其他">✨ 其他</option>
+            </select>
+          </div>
+
+          <div class="md:col-span-3 flex rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs font-medium">
+            <button id="statusFilterAll" class="flex-1 py-1.5 rounded-lg text-center transition-all bg-white font-bold text-teal-700 shadow-sm">全部</button>
+            <button id="statusFilterWant" class="flex-1 py-1.5 rounded-lg text-center text-slate-600 hover:text-slate-900 transition-all">想吃</button>
+            <button id="statusFilterVisited" class="flex-1 py-1.5 rounded-lg text-center text-slate-600 hover:text-slate-900 transition-all">已吃</button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500">
+          <div class="flex items-center gap-3">
+            <span>總計: <strong id="totalCount" class="text-slate-800">0</strong> 間</span>
+            <span>•</span>
+            <span class="text-emerald-600 font-medium">已踩點: <strong id="visitedCount">0</strong></span>
+            <span>•</span>
+            <span class="text-amber-600 font-medium">待解鎖: <strong id="wantCount">0</strong></span>
+          </div>
+
+          <button id="openAddModalBtn" class="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 active:scale-95 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-teal-500/20 flex items-center gap-2 transition-all">
+            <i class="fa-solid fa-circle-plus"></i>
+            <span>新增美食</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Food Cards List Container -->
+      <section>
+        <div id="foodList" class="space-y-3">
+          <div class="text-center py-12 text-slate-400 bg-white rounded-2xl border border-slate-200">
+            <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-teal-500"></i>
+            <p class="text-sm">資料連線載入中...</p>
+          </div>
+        </div>
+
+        <div id="emptyState" class="hidden text-center py-12 px-4 bg-white rounded-2xl border border-dashed border-slate-300">
+          <div class="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+            <i class="fa-solid fa-map-location-dot"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-700">找不到符合的美食店家</h3>
+          <p class="text-xs text-slate-400 mt-1">嘗試調整搜尋關鍵字，或直接點選上方「新增美食」按鈕！</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== TAB 2: 多日行程規劃區塊 ==================== -->
+    <div id="tripTabContent" class="space-y-6 hidden">
+      <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div id="dayTabsContainer" class="flex flex-wrap gap-2"></div>
+          <button id="addDayBtn" class="bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+            <i class="fa-solid fa-plus"></i> 新增天數
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between pt-3 border-t border-slate-100 flex-wrap gap-3">
+          <div class="flex items-center gap-3">
+            <h3 id="currentDayTitle" class="font-bold text-slate-800 text-base flex items-center gap-2">
+              <i class="fa-solid fa-calendar-day text-teal-600"></i> <span>第一天行程</span>
+            </h3>
+            <div class="flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200">
+              <i class="fa-regular fa-calendar text-slate-400 text-xs"></i>
+              <input type="text" id="dayDateInput" placeholder="填寫日期(例如: 10/20)" class="bg-transparent text-xs text-slate-700 focus:outline-none w-28 font-medium">
+            </div>
+          </div>
+
+          <button id="openAddTripModalBtn" class="bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 active:scale-95 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-teal-500/20 flex items-center gap-2 transition-all">
+            <i class="fa-solid fa-circle-plus"></i>
+            <span>新增行程點</span>
+          </button>
+        </div>
+      </section>
+
+      <section>
+        <div id="tripList" class="space-y-3"></div>
+        <div id="emptyTripState" class="hidden text-center py-12 px-4 bg-white rounded-2xl border border-dashed border-slate-300">
+          <div class="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+            <i class="fa-solid fa-route"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-700">這一天還沒有安排行程</h3>
+          <p class="text-xs text-slate-400 mt-1">點擊上方「新增行程點」來規劃你的旅遊路線吧！</p>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- Add / Edit Modal (美食專用) -->
+  <div id="itemModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+      <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+        <h3 id="modalTitle" class="font-bold text-lg flex items-center gap-2">
+          <i class="fa-solid fa-utensils text-yellow-400"></i>
+          <span>新增美食店家</span>
+        </h3>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-white p-1 rounded-lg transition-colors">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <form id="foodForm" class="p-6 space-y-4 overflow-y-auto flex-1 text-sm">
+        <input type="hidden" id="editItemId" value="">
+
+        <div class="space-y-1.5">
+          <label class="font-bold text-slate-700 flex items-center justify-between">
+            <span>店家名稱 <span class="text-rose-500">*</span></span>
+            <span class="text-[11px] text-teal-600 font-normal">輸入店名自動判斷分類</span>
+          </label>
+          <input type="text" id="itemName" required placeholder="例如：南華麵店、公正包子..." 
+            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all font-medium">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <label class="font-bold text-slate-700">美食分類 (自動判斷)</label>
+            <select id="itemCategory" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium text-slate-700">
+              <option value="小吃">🥟 小吃</option>
+              <option value="麵食">🍜 麵食 / 扁食</option>
+              <option value="甜點">🍧 甜點 / 冰品</option>
+              <option value="飲料">🥤 飲料 / 茶飲</option>
+              <option value="餐廳">🍣 餐廳 / 正餐</option>
+              <option value="宵夜">🌙 宵夜 / 炸物</option>
+              <option value="伴手禮">🎁 伴手禮</option>
+              <option value="其他">✨ 其他</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="font-bold text-slate-700">評分 (選填)</label>
+            <select id="itemRating" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium text-amber-600">
+              <option value="5">⭐⭐⭐⭐⭐ (5.0 超棒)</option>
+              <option value="4">⭐⭐⭐⭐ (4.0 推薦)</option>
+              <option value="3">⭐⭐⭐ (3.0 普通)</option>
+              <option value="2">⭐⭐ (2.0 普普)</option>
+              <option value="1">⭐ (1.0 雷爆)</option>
+              <option value="0" selected>尚無評分</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="font-bold text-slate-700 flex items-center justify-between">
+            <span>地址</span>
+            <button type="button" id="autoFetchAddressBtn" class="text-[11px] bg-teal-50 hover:bg-teal-100 text-teal-700 px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 shadow-2xs">
+              <i class="fa-solid fa-wand-magic-sparkles text-teal-600"></i> ✨ 自動抓取地址
+            </button>
+          </label>
+          <input type="text" id="itemAddress" placeholder="輸入店名後點擊「自動抓取地址」" 
+            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700">
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="font-bold text-slate-700 flex items-center justify-between gap-2">
+            <span>心得備註 / 推薦必點</span>
+            <button type="button" id="googleReviewLookupBtn" class="text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5">
+              <i class="fa-brands fa-google"></i> 查 Google 評論
+            </button>
+          </label>
+          <textarea id="itemNote" rows="2" placeholder="例如：必點招牌煎麵！" 
+            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700 resize-none"></textarea>
+        </div>
+
+        <div class="pt-2">
+          <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
+            <input type="checkbox" id="itemVisited" class="w-5 h-5 rounded border-slate-300 text-teal-600 focus:ring-teal-500 transition-all">
+            <span class="font-bold text-slate-800">標記為「已踩點 / 已吃過」</span>
+          </label>
+        </div>
+
+        <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+          <button type="button" id="cancelFormBtn" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 font-bold transition-all">取消</button>
+          <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold shadow-md shadow-teal-500/20 transition-all">儲存美食</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add / Edit Trip Modal (行程專用) -->
+  <div id="tripModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+      <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+        <h3 id="tripModalTitle" class="font-bold text-lg flex items-center gap-2">
+          <i class="fa-solid fa-calendar-day text-yellow-400"></i>
+          <span>新增行程點</span>
+        </h3>
+        <button id="closeTripModalBtn" class="text-slate-400 hover:text-white p-1 rounded-lg transition-colors">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <form id="tripForm" class="p-6 space-y-4 overflow-y-auto flex-1 text-sm">
+        <input type="hidden" id="editTripId" value="">
+
+        <div class="space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+          <label class="font-bold text-slate-700 flex items-center justify-between text-xs uppercase tracking-wider">
+            <span>選擇時段與時間</span>
+            <span class="text-teal-600 font-normal">點選時段或調整滾動時間</span>
+          </label>
+
+          <div class="flex flex-wrap gap-1.5 pb-2 border-b border-slate-200/60">
+            <button type="button" onclick="setPeriod('上午')" class="px-2.5 py-1 bg-white hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-2xs">🌅 上午</button>
+            <button type="button" onclick="setPeriod('中午')" class="px-2.5 py-1 bg-white hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-2xs">🍜 中午</button>
+            <button type="button" onclick="setPeriod('下午')" class="px-2.5 py-1 bg-white hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-2xs">☕ 下午</button>
+            <button type="button" onclick="setPeriod('晚上')" class="px-2.5 py-1 bg-white hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-2xs">🌙 晚上</button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 pt-1">
+            <div>
+              <label class="text-[11px] text-slate-500 font-medium block mb-1">時段</label>
+              <select id="pickerAmPm" class="w-full px-2 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm text-teal-700 focus:ring-2 focus:ring-teal-500">
+                <option value="上午">上午</option>
+                <option value="中午">中午</option>
+                <option value="下午">下午</option>
+                <option value="晚上">晚上</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-500 font-medium block mb-1">小時 (1-12)</label>
+              <select id="pickerHour" class="w-full px-2 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 focus:ring-2 focus:ring-teal-500">
+                <option value="01">01 點</option><option value="02">02 點</option><option value="03">03 點</option><option value="04">04 點</option>
+                <option value="05">05 點</option><option value="06">06 點</option><option value="07">07 點</option><option value="08">08 點</option>
+                <option value="09">09 點</option><option value="10" selected>10 點</option><option value="11">11 點</option><option value="12">12 點</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-500 font-medium block mb-1">分鐘</label>
+              <select id="pickerMinute" class="w-full px-2 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm text-slate-800 focus:ring-2 focus:ring-teal-500">
+                <option value="00" selected>00 分</option>
+                <option value="10">10 分</option>
+                <option value="15">15 分</option>
+                <option value="20">20 分</option>
+                <option value="30">30 分</option>
+                <option value="40">40 分</option>
+                <option value="45">45 分</option>
+                <option value="50">50 分</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="font-bold text-slate-700 flex items-center justify-between">
+            <span>景點或店家名稱 <span class="text-rose-500">*</span></span>
+          </label>
+          <input type="text" id="tripName" required placeholder="例如：太魯閣國家公園、南華麵店..." 
+            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all font-medium">
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="font-bold text-slate-700 flex items-center justify-between">
+            <span>地址</span>
+            <button type="button" id="autoFetchTripAddressBtn" class="text-[11px] bg-teal-50 hover:bg-teal-100 text-teal-700 px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 shadow-2xs">
+              <i class="fa-solid fa-wand-magic-sparkles text-teal-600"></i> ✨ 自動抓取地址
+            </button>
+          </label>
+          <input type="text" id="tripAddress" placeholder="輸入名稱後點擊「自動抓取地址」" 
+            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700">
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="font-bold text-slate-700">行程備註 / 注意事項</label>
+          <textarea id="tripNote" rows="2" placeholder="例如：記得提前預約門票..." 
+            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700 resize-none"></textarea>
+        </div>
+
+        <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+          <button type="button" id="cancelTripFormBtn" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 font-bold transition-all">取消</button>
+          <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold shadow-md shadow-teal-500/20 transition-all">儲存行程</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Share / LINE Export Modal -->
+  <div id="shareModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+      <div class="bg-teal-600 text-white px-6 py-4 flex items-center justify-between">
+        <h3 class="font-bold text-lg flex items-center gap-2">
+          <i class="fa-solid fa-share-nodes text-yellow-300"></i>
+          <span>匯出花蓮美食與行程清單</span>
+        </h3>
+        <button id="closeShareModalBtn" class="text-teal-100 hover:text-white p-1 rounded-lg transition-colors">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <p class="text-xs text-slate-500">
+          此格式包含美食口袋清單與多日行程安排，可以直接複製文字傳送到 LINE 群組與朋友討論！
+        </p>
+
+        <textarea id="shareTextarea" readonly rows="10" 
+          class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-700 focus:outline-none resize-none leading-relaxed select-all"></textarea>
+
+        <div class="flex items-center justify-between gap-3 pt-2">
+          <span id="copyNotice" class="text-xs font-bold text-emerald-600 hidden flex items-center gap-1">
+            <i class="fa-solid fa-check"></i> 已成功複製到剪貼簿！
+          </span>
+          <div class="flex items-center gap-2 ml-auto">
+            <button id="copyShareBtn" class="bg-teal-600 hover:bg-teal-700 active:scale-95 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-teal-600/20 flex items-center gap-1.5 transition-all">
+              <i class="fa-solid fa-copy"></i> 複製文字
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white text-xs sm:text-sm px-4 py-3 rounded-2xl shadow-2xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2 border border-slate-700">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+    <span id="toastMsg">提示訊息</span>
+  </div>
+
+  <!-- JavaScript Application Logic -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyChEE-HjvuovlJhcv8iN9-D2C_iMqY3Dmo",
+      authDomain: "hualien-food.firebaseapp.com",
+      projectId: "hualien-food",
+      storageBucket: "hualien-food.firebasestorage.app",
+      messagingSenderId: "159326771942",
+      appId: "1:159326771942:web:c9f6113249847b9476b927"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+    const collectionRef = db.collection('hualien_shared_foods');
+    const tripCollectionRef = db.collection('hualien_shared_trips');
+    const metaCollectionRef = db.collection('hualien_shared_meta');
+
+    let foodItems = [];
+    let tripItems = [];
+    let dayDates = {};
+    let maxDayCount = 3; // 預設至少顯示到 3 天
+    let currentStatusFilter = 'ALL';
+    let currentActiveTab = 'FOOD';
+    let currentDay = 1;
+
+    const foodTabContent = document.getElementById('foodTabContent');
+    const tripTabContent = document.getElementById('tripTabContent');
+    const tabFoodBtn = document.getElementById('tabFoodBtn');
+    const tabTripBtn = document.getElementById('tabTripBtn');
+
+    const foodListContainer = document.getElementById('foodList');
+    const emptyState = document.getElementById('emptyState');
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+
+    const itemModal = document.getElementById('itemModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const foodForm = document.getElementById('foodForm');
+    const editItemId = document.getElementById('editItemId');
+    const itemName = document.getElementById('itemName');
+    const itemCategory = document.getElementById('itemCategory');
+    const itemAddress = document.getElementById('itemAddress');
+    const itemRating = document.getElementById('itemRating');
+    const itemNote = document.getElementById('itemNote');
+    const itemVisited = document.getElementById('itemVisited');
+
+    const tripModal = document.getElementById('tripModal');
+    const tripForm = document.getElementById('tripForm');
+    const editTripId = document.getElementById('editTripId');
+    const pickerAmPm = document.getElementById('pickerAmPm');
+    const pickerHour = document.getElementById('pickerHour');
+    const pickerMinute = document.getElementById('pickerMinute');
+    const tripName = document.getElementById('tripName');
+    const tripAddress = document.getElementById('tripAddress');
+    const tripNote = document.getElementById('tripNote');
+    const currentDayTitle = document.getElementById('currentDayTitle');
+    const dayDateInput = document.getElementById('dayDateInput');
+    const tripListContainer = document.getElementById('tripList');
+    const emptyTripState = document.getElementById('emptyTripState');
+    const dayTabsContainer = document.getElementById('dayTabsContainer');
+
+    function generateGoogleMapsUrl(name, address) {
+      // 優先用店名搜尋，避免不完整/錯誤地址把 Google Maps 導向錯店。
+      const query = address ? `${name} ${address}` : `${name} 花蓮`;
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    }
+
+    function getStreetAddress(result) {
+      // 優先組成「花蓮縣＋鄉鎮市區＋道路＋門牌」；不把缺失的行政區硬猜成花蓮市。
+      const a = (result && result.address) || {};
+      const display = (result && result.display_name) || '';
+      const parts = display.split(',').map(x => x.trim()).filter(Boolean);
+
+      let county = a.county || a.state || '';
+      if (!/花蓮/.test(county) && /花蓮/.test(display)) county = '花蓮縣';
+      if (!county && /花蓮/.test(display)) county = '花蓮縣';
+
+      const district = a.city_district || a.city || a.town || a.municipality ||
+                       a.suburb || a.village || a.district || '';
+      const road = a.road || a.pedestrian || a.residential || a.footway || '';
+      const house = a.house_number || '';
+      const building = a.building || a.house_name || '';
+      const roadLine = `${road}${house ? house + '號' : ''}`.trim();
+
+      if (roadLine && county && district) {
+        return `${county}${district}${roadLine}${building ? ' ' + building : ''}`;
+      }
+
+      // 有些 OSM 資料只提供道路或行政區；從 display_name 補足可辨識的地址片段。
+      const streetPart = parts.find(x => /(路|街|大道|巷|弄|段)/.test(x) &&
+        !/(花蓮縣|花蓮市|吉安鄉|新城鄉|壽豐鄉|鳳林鎮|玉里鎮|光復鄉|瑞穗鄉|富里鄉|秀林鄉|萬榮鄉|卓溪鄉|豐濱鄉|台灣|臺灣)/.test(x));
+      const numberPart = parts.find(x => /^\d+號?$/.test(x));
+      const fallbackRoad = roadLine || (streetPart ? streetPart + (numberPart && !/號$/.test(streetPart) ? numberPart : '') : '');
+      if (!fallbackRoad) return '';
+
+      const knownDistricts = [
+        '花蓮市','吉安鄉','新城鄉','壽豐鄉','鳳林鎮','玉里鎮','光復鄉',
+        '瑞穗鄉','富里鄉','秀林鄉','萬榮鄉','卓溪鄉','豐濱鄉'
+      ];
+      const foundDistrict = district || knownDistricts.find(x => display.includes(x)) || '';
+      if (county && foundDistrict) return `${county}${foundDistrict}${fallbackRoad}`;
+      if (/花蓮/.test(display)) return `花蓮縣${foundDistrict}${fallbackRoad}`;
+      return '';
+    }
+
+    function scoreAddressResult(result, searchedName) {
+      const a = (result && result.address) || {};
+      const display = `${(result && result.name) || ''} ${(result && result.display_name) || ''}`;
+      const normalizedName = String(searchedName || '').replace(/\s+/g, '').toLowerCase();
+      const normalizedDisplay = display.replace(/\s+/g, '').toLowerCase();
+      let score = 0;
+      if (a.house_number) score += 8;
+      if (a.road || a.pedestrian || a.residential) score += 4;
+      if (a.city_district || a.city || a.town || a.municipality || a.suburb) score += 2;
+      if (/花蓮/.test(display) || /花蓮/.test(a.county || '') || /花蓮/.test(a.state || '')) score += 5;
+      if (normalizedName && normalizedDisplay.includes(normalizedName)) score += 7;
+      else {
+        const tokens = String(searchedName || '').split(/\s+/).filter(x => x.length >= 2);
+        score += tokens.filter(t => normalizedDisplay.includes(t.replace(/\s+/g, '').toLowerCase())).length * 2;
+      }
+      if (a.country && !/台灣|臺灣|Taiwan/i.test(a.country)) score -= 20;
+      if (result && result.type && /county|city|town|village|administrative/i.test(result.type) && !a.road) score -= 5;
+      return score;
+    }
+
+    async function lookupPlaceAddress(name) {
+      // 多組查詢詞並逐組比對多筆結果；Nominatim 為免費服務，請勿短時間大量連續查詢。
+      const queries = [
+        `${name}, 花蓮縣, 臺灣`,
+        `${name}, 花蓮縣, 台灣`,
+        `${name} 花蓮縣`,
+        `${name} 花蓮`
+      ];
+      const allResults = [];
+      const seen = new Set();
+
+      for (let i = 0; i < queries.length; i++) {
+        const q = queries[i];
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=jsonv2&addressdetails=1&namedetails=1&limit=8&countrycodes=tw&accept-language=zh-TW`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'zh-TW' } });
+        if (res.ok) {
+          const results = await res.json();
+          if (Array.isArray(results)) {
+            for (const r of results) {
+              const key = `${r.place_id || ''}|${r.osm_type || ''}|${r.osm_id || ''}|${r.display_name || ''}`;
+              if (!seen.has(key)) {
+                seen.add(key);
+                allResults.push(r);
+              }
+            }
+          }
+        }
+        // Nominatim 公開服務要求低頻率使用，避免每次點擊都密集送出請求。
+        if (i < queries.length - 1) await new Promise(resolve => setTimeout(resolve, 1050));
+      }
+
+      const ranked = allResults
+        .map(r => ({ r, addr: getStreetAddress(r), score: scoreAddressResult(r, name) }))
+        .filter(x => x.addr && /花蓮縣/.test(x.addr))
+        .sort((a, b) => b.score - a.score);
+
+      // 有道路地址時優先回傳；有門牌的結果分數最高。
+      return ranked.length ? ranked[0].addr : '';
+    }
+    function init() {
+      listenToFirebase();
+      listenToTripFirebase();
+      listenToMetaFirebase();
+      bindEvents();
+    }
+
+    function autoDetectCategory(name) {
+      if (!name) return '小吃';
+      const n = name.toLowerCase();
+      if (n.includes('麵') || n.includes('扁食') || n.includes('粉') || n.includes('餃')) return '麵食';
+      if (n.includes('冰') || n.includes('豆花') || n.includes('甜點') || n.includes('圓') || n.includes('布丁')) return '甜點';
+      if (n.includes('茶') || n.includes('飲料') || n.includes('咖啡') || n.includes('果汁')) return '飲料';
+      if (n.includes('壽司') || n.includes('餐廳') || n.includes('咖哩') || n.includes('牛排') || n.includes('火鍋')) return '餐廳';
+      if (n.includes('炸') || n.includes('烤') || n.includes('宵夜') || n.includes('鹹酥雞')) return '宵夜';
+      if (n.includes('麻糬') || n.includes('餅') || n.includes('酥') || n.includes('伴手禮')) return '伴手禮';
+      return '小吃';
+    }
+
+    function listenToFirebase() {
+      collectionRef.orderBy('orderIndex', 'asc').onSnapshot((snapshot) => {
+        foodItems = [];
+        snapshot.forEach((doc) => {
+          foodItems.push({ id: doc.id, ...doc.data() });
+        });
+        if (foodItems.length === 0 && snapshot.empty) {
+          seedInitialData();
+          return;
+        }
+        renderFoodList();
+      });
+    }
+
+    function listenToTripFirebase() {
+      tripCollectionRef.orderBy('orderIndex', 'asc').onSnapshot((snapshot) => {
+        tripItems = [];
+        snapshot.forEach((doc) => {
+          tripItems.push({ id: doc.id, ...doc.data() });
+        });
+        renderTripList();
+      });
+    }
+
+    function listenToMetaFirebase() {
+      metaCollectionRef.doc('day_dates').onSnapshot((doc) => {
+        if (doc.exists) {
+          const data = doc.data() || {};
+          dayDates = data;
+          if (data.maxDay) maxDayCount = Math.max(maxDayCount, data.maxDay);
+          renderTripList();
+        }
+      });
+    }
+
+    function seedInitialData() {
+      collectionRef.add({ name: "南華麵店", category: "麵食", address: "花蓮縣吉安鄉中華路二段199號", note: "必點：招牌煎麵、各式滷味！", rating: 5, visited: false, orderIndex: 1000 });
+      collectionRef.add({ name: "慶豐麵店", category: "麵食", address: "花蓮縣吉安鄉吉安路六號", note: "必點：煙燻滷味、切仔麵！", rating: 5, visited: false, orderIndex: 1500 });
+    }
+
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.textContent = msg;
+      toastIcon.className = isSuccess ? "fa-solid fa-circle-check text-emerald-400 text-base" : "fa-solid fa-circle-exclamation text-amber-400 text-base";
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    function renderFoodList() {
+      const searchTerm = searchInput.value.trim().toLowerCase();
+      const category = categoryFilter.value;
+
+      const filtered = foodItems.filter(item => {
+        const matchesSearch = item.name.toLowerCase().includes(searchTerm) || (item.address && item.address.toLowerCase().includes(searchTerm));
+        const matchesCategory = (category === 'ALL') || (item.category === category);
+        let matchesStatus = true;
+        if (currentStatusFilter === 'WANT') matchesStatus = !item.visited;
+        if (currentStatusFilter === 'VISITED') matchesStatus = item.visited;
+        return matchesSearch && matchesCategory && matchesStatus;
+      });
+
+      document.getElementById('totalCount').textContent = foodItems.length;
+      document.getElementById('visitedCount').textContent = foodItems.filter(i => i.visited).length;
+      document.getElementById('wantCount').textContent = foodItems.filter(i => !i.visited).length;
+
+      if (filtered.length === 0) {
+        foodListContainer.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      foodListContainer.innerHTML = filtered.map((item, index) => {
+        const mapsUrl = generateGoogleMapsUrl(item.name, item.address);
+        const stars = item.rating > 0 ? '⭐'.repeat(item.rating) : '';
+
+        return `
+          <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/90 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group ${item.visited ? 'bg-slate-50/80' : ''}">
+            <div class="flex items-start gap-3 flex-1 min-w-0">
+              <button onclick="toggleVisited('${item.id}')" class="mt-1 text-lg transition-transform active:scale-75">
+                ${item.visited ? '<i class="fa-solid fa-circle-check text-emerald-500"></i>' : '<i class="fa-regular fa-circle text-slate-300 hover:text-teal-500"></i>'}
+              </button>
+              <div class="flex-1 min-w-0 space-y-1">
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                  <span class="px-2 py-0.5 rounded-md font-bold bg-teal-50 text-teal-700 border border-teal-200/60">${item.category}</span>
+                  ${stars ? `<span class="text-amber-500 font-bold">${stars}</span>` : ''}
+                </div>
+                <a href="${mapsUrl}" target="_blank" class="text-base sm:text-lg font-bold text-slate-900 hover:text-teal-600 flex items-center gap-1.5">
+                  <span class="${item.visited ? 'line-through text-slate-400' : ''}">${escapeHtml(item.name)}</span>
+                  <i class="fa-solid fa-arrow-up-right-from-square text-xs text-teal-500"></i>
+                </a>
+                <div class="text-xs text-slate-500 flex items-center gap-1.5">
+                  <i class="fa-solid fa-location-dot text-rose-500 shrink-0"></i>
+                  <span class="font-mono">${escapeHtml(item.address || '花蓮縣')}</span>
+                </div>
+                ${item.note ? `<p class="text-xs text-slate-600 bg-slate-100/80 p-2 rounded-xl mt-1.5">💬 ${escapeHtml(item.note)}</p>` : ''}
+              </div>
+            </div>
+            <div class="flex sm:flex-col items-center justify-end gap-2 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 shrink-0">
+              <div class="flex items-center bg-slate-100 p-1 rounded-xl">
+                <button onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled class="text-slate-300 cursor-not-allowed px-2 py-0.5"' : 'class="text-slate-600 hover:text-teal-600 px-2 py-0.5"'}>▲</button>
+                <button onclick="moveItem(${index}, 1)" ${index === filtered.length - 1 ? 'disabled class="text-slate-300 cursor-not-allowed px-2 py-0.5"' : 'class="text-slate-600 hover:text-teal-600 px-2 py-0.5"'}>▼</button>
+              </div>
+              <div class="flex items-center gap-1">
+                <a href="${mapsUrl}" target="_blank" class="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg text-xs font-bold">導航</a>
+                <button onclick="openEditModal('${item.id}')" class="p-1.5 text-slate-400 hover:text-teal-600"><i class="fa-solid fa-pen-to-square"></i></button>
+                <button onclick="deleteItem('${item.id}')" class="p-1.5 text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderTripList() {
+      let highestDay = maxDayCount;
+      tripItems.forEach(item => {
+        if (item.day && item.day > highestDay) highestDay = item.day;
+      });
+      maxDayCount = highestDay;
+
+      const days = [];
+      for (let i = 1; i <= maxDayCount; i++) {
+        days.push(i);
+      }
+
+      dayTabsContainer.innerHTML = days.map(d => {
+        const dateStr = dayDates[`day_${d}`] ? ` (${dayDates[`day_${d}`]})` : '';
+        return `
+          <button onclick="switchDay(${d})" class="px-4 py-2 rounded-xl font-bold text-xs transition-all ${currentDay === d ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+            第 ${d} 天${dateStr}
+          </button>
+        `;
+      }).join('');
+
+      currentDayTitle.innerHTML = `<i class="fa-solid fa-calendar-day text-teal-600"></i> <span>第 ${currentDay} 天行程</span>`;
+      dayDateInput.value = dayDates[`day_${currentDay}`] || '';
+
+      const filteredTrips = tripItems.filter(item => (item.day || 1) === currentDay);
+
+      if (filteredTrips.length === 0) {
+        tripListContainer.innerHTML = '';
+        emptyTripState.classList.remove('hidden');
+        return;
+      }
+      emptyTripState.classList.add('hidden');
+
+      tripListContainer.innerHTML = filteredTrips.map((item, index) => {
+        const mapsUrl = generateGoogleMapsUrl(item.name, item.address);
+        return `
+          <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/90 hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-start gap-3 flex-1 min-w-0">
+              <div class="bg-teal-50 text-teal-700 font-bold px-3 py-1.5 rounded-xl text-xs shrink-0 border border-teal-200/60">
+                ${escapeHtml(item.time || '未指定時段')}
+              </div>
+              <div class="flex-1 min-w-0 space-y-1">
+                <a href="${mapsUrl}" target="_blank" class="text-base sm:text-lg font-bold text-slate-900 hover:text-teal-600 flex items-center gap-1.5">
+                  <span>${escapeHtml(item.name)}</span>
+                  <i class="fa-solid fa-arrow-up-right-from-square text-xs text-teal-500"></i>
+                </a>
+                <div class="text-xs text-slate-500 flex items-center gap-1.5">
+                  <i class="fa-solid fa-location-dot text-rose-500 shrink-0"></i>
+                  <span class="font-mono">${escapeHtml(item.address || '花蓮縣')}</span>
+                </div>
+                ${item.note ? `<p class="text-xs text-slate-600 bg-slate-100/80 p-2 rounded-xl mt-1.5">💬 ${escapeHtml(item.note)}</p>` : ''}
+              </div>
+            </div>
+            <div class="flex items-center gap-1 justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 shrink-0">
+              <a href="${mapsUrl}" target="_blank" class="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-xl text-xs font-bold">導航</a>
+              <button onclick="openEditTripModal('${item.id}')" class="p-2 text-slate-400 hover:text-teal-600"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button onclick="deleteTripItem('${item.id}')" class="p-2 text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.switchDay = function(d) {
+      currentDay = d;
+      renderTripList();
+    };
+
+    window.setPeriod = function(period) {
+      pickerAmPm.value = period;
+    };
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+    }
+
+    function bindEvents() {
+      tabFoodBtn.addEventListener('click', () => {
+        currentActiveTab = 'FOOD';
+        tabFoodBtn.className = "flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-white text-teal-700 shadow-sm flex items-center justify-center gap-2";
+        tabTripBtn.className = "flex-1 py-3 rounded-xl font-bold text-sm transition-all text-slate-600 hover:text-slate-900 flex items-center justify-center gap-2";
+        foodTabContent.classList.remove('hidden');
+        tripTabContent.classList.add('hidden');
+      });
+
+      tabTripBtn.addEventListener('click', () => {
+        currentActiveTab = 'TRIP';
+        tabTripBtn.className = "flex-1 py-3 rounded-xl font-bold text-sm transition-all bg-white text-teal-700 shadow-sm flex items-center justify-center gap-2";
+        tabFoodBtn.className = "flex-1 py-3 rounded-xl font-bold text-sm transition-all text-slate-600 hover:text-slate-900 flex items-center justify-center gap-2";
+        tripTabContent.classList.remove('hidden');
+        foodTabContent.classList.add('hidden');
+      });
+
+      searchInput.addEventListener('input', renderFoodList);
+      categoryFilter.addEventListener('change', renderFoodList);
+
+      document.getElementById('openAddModalBtn').addEventListener('click', () => openAddModal());
+      document.getElementById('closeModalBtn').addEventListener('click', closeFoodModal);
+      document.getElementById('cancelFormBtn').addEventListener('click', closeFoodModal);
+      foodForm.addEventListener('submit', handleFormSubmit);
+
+      itemName.addEventListener('input', (e) => {
+        const val = e.target.value;
+        itemCategory.value = autoDetectCategory(val);
+      });
+
+      document.getElementById('autoFetchAddressBtn').addEventListener('click', async () => {
+        const name = itemName.value.trim();
+        if (!name) {
+          showToast("請先輸入店家名稱！", false);
+          itemName.focus();
+          return;
+        }
+        showToast("正在比對多組店名與花蓮地址資料，可能需要幾秒...", true);
+        try {
+          const addr = await lookupPlaceAddress(name);
+          if (addr) {
+            itemAddress.value = addr;
+            showToast(`已帶入地址：${addr}`);
+          } else {
+            showToast("免費地圖資料沒有足夠完整的地址，已開啟 Google Maps 供你確認", false);
+            window.open(generateGoogleMapsUrl(name, ''), '_blank', 'noopener');
+          }
+        } catch (err) {
+          showToast("地址搜尋暫時失敗，已開啟 Google Maps 供你確認", false);
+          window.open(generateGoogleMapsUrl(name, ''), '_blank', 'noopener');
+        }
+      });
+
+      document.getElementById('googleReviewLookupBtn').addEventListener('click', () => {
+        const name = itemName.value.trim();
+        if (!name) {
+          showToast("請先輸入店家名稱！", false);
+          itemName.focus();
+          return;
+        }
+        // Google 不允許一般網頁直接跨網域讀取評論內容；先開啟該店 Google Maps 評論搜尋。
+        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' 花蓮')}&query_place_id=&hl=zh-TW`;
+        window.open(url, '_blank', 'noopener');
+        showToast("已開啟 Google Maps，請查看「評論」並將心得貼回備註");
+      });
+
+      dayDateInput.addEventListener('blur', async () => {
+        const val = dayDateInput.value.trim();
+        dayDates[`day_${currentDay}`] = val;
+        dayDates.maxDay = maxDayCount;
+        await metaCollectionRef.doc('day_dates').set(dayDates, { merge: true });
+        renderTripList();
+      });
+
+      document.getElementById('openAddTripModalBtn').addEventListener('click', () => openAddTripModal());
+      document.getElementById('closeTripModalBtn').addEventListener('click', closeTripModal);
+      document.getElementById('cancelTripFormBtn').addEventListener('click', closeTripModal);
+      tripForm.addEventListener('submit', handleTripFormSubmit);
+
+      document.getElementById('addDayBtn').addEventListener('click', async () => {
+        maxDayCount += 1;
+        currentDay = maxDayCount;
+        dayDates.maxDay = maxDayCount;
+        await metaCollectionRef.doc('day_dates').set(dayDates, { merge: true });
+        renderTripList();
+        showToast(`已新增第 ${currentDay} 天行程！`);
+      });
+
+      document.getElementById('autoFetchTripAddressBtn').addEventListener('click', async () => {
+        const name = tripName.value.trim();
+        if (!name) {
+          showToast("請先輸入景點或店家名稱！", false);
+          tripName.focus();
+          return;
+        }
+        showToast("正在比對多組景點名稱與花蓮地址資料，可能需要幾秒...", true);
+        try {
+          const addr = await lookupPlaceAddress(name);
+          if (addr) {
+            tripAddress.value = addr;
+            showToast(`已帶入地址：${addr}`);
+          } else {
+            showToast("地圖資料找不到道路/門牌，已開啟 Google Maps 供你確認", false);
+            window.open(generateGoogleMapsUrl(name, ''), '_blank', 'noopener');
+          }
+        } catch (err) {
+          showToast("地址搜尋暫時失敗，已開啟 Google Maps 供你確認", false);
+          window.open(generateGoogleMapsUrl(name, ''), '_blank', 'noopener');
+        }
+      });
+    }
+
+    window.moveItem = async function(index, direction) {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= foodItems.length) return;
+      const batch = db.batch();
+      batch.update(collectionRef.doc(foodItems[index].id), { orderIndex: foodItems[targetIndex].orderIndex || targetIndex * 1000 });
+      batch.update(collectionRef.doc(foodItems[targetIndex].id), { orderIndex: foodItems[index].orderIndex || index * 1000 });
+      await batch.commit();
+    };
+
+    window.toggleVisited = async function(id) {
+      const item = foodItems.find(i => i.id === id);
+      if (item) await collectionRef.doc(id).update({ visited: !item.visited });
+    };
+
+    window.deleteItem = async function(id) {
+      if (confirm('確定要刪除嗎？')) await collectionRef.doc(id).delete();
+    };
+
+    window.deleteTripItem = async function(id) {
+      if (confirm('確定要刪除這個行程點嗎？')) await tripCollectionRef.doc(id).delete();
+    };
+
+    function openAddModal() {
+      modalTitle.innerHTML = `<i class="fa-solid fa-utensils text-yellow-400"></i><span>新增美食店家</span>`;
+      editItemId.value = '';
+      foodForm.reset();
+      itemVisited.checked = false;
+      itemRating.value = "0";
+      itemModal.classList.remove('hidden');
+      itemName.focus();
+    }
+
+    window.openEditModal = function(id) {
+      const item = foodItems.find(i => i.id === id);
+      if (!item) return;
+      editItemId.value = item.id;
+      itemName.value = item.name;
+      itemCategory.value = item.category || '小吃';
+      itemAddress.value = item.address || '';
+      itemRating.value = item.rating || 0;
+      itemNote.value = item.note || '';
+      itemVisited.checked = item.visited || false;
+      itemModal.classList.remove('hidden');
+    };
+
+    function closeFoodModal() { itemModal.classList.add('hidden'); }
+
+    function openAddTripModal() {
+      editTripId.value = '';
+      tripForm.reset();
+      pickerAmPm.value = "上午";
+      pickerHour.value = "10";
+      pickerMinute.value = "00";
+      tripModal.classList.remove('hidden');
+      tripName.focus();
+    }
+
+    window.openEditTripModal = function(id) {
+      const item = tripItems.find(i => i.id === id);
+      if (!item) return;
+      editTripId.value = item.id;
+      tripName.value = item.name || '';
+      tripAddress.value = item.address || '';
+      tripNote.value = item.note || '';
+
+      const parts = (item.time || '').split(' ');
+      if (parts.length >= 2) {
+        pickerAmPm.value = parts[0];
+        const hm = parts[1].split(':');
+        if (hm.length === 2) {
+          pickerHour.value = hm[0];
+          pickerMinute.value = hm[1];
+        }
+      }
+
+      tripModal.classList.remove('hidden');
+    };
+
+    function closeTripModal() { tripModal.classList.add('hidden'); }
+
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      const id = editItemId.value;
+      const data = {
+        name: itemName.value.trim(),
+        category: itemCategory.value,
+        address: itemAddress.value.trim(),
+        rating: parseInt(itemRating.value, 10) || 0,
+        note: itemNote.value.trim(),
+        visited: itemVisited.checked
+      };
+      if (!data.name) return;
+
+      if (id) {
+        await collectionRef.doc(id).update(data);
+      } else {
+        data.orderIndex = Date.now();
+        await collectionRef.add(data);
+      }
+      closeFoodModal();
+      showToast("儲存成功！");
+    }
+
+    async function handleTripFormSubmit(e) {
+      e.preventDefault();
+      const id = editTripId.value;
+      const timeStr = `${pickerAmPm.value} ${pickerHour.value}:${pickerMinute.value}`;
+
+      const data = {
+        day: currentDay,
+        time: timeStr,
+        name: tripName.value.trim(),
+        address: tripAddress.value.trim(),
+        note: tripNote.value.trim()
+      };
+      if (!data.name) return;
+
+      if (id) {
+        await tripCollectionRef.doc(id).update(data);
+      } else {
+        data.orderIndex = Date.now();
+        await tripCollectionRef.add(data);
+      }
+      closeTripModal();
+      showToast("行程儲存成功！");
+    }
+
+    function openShareModal() {
+      let text = `🌊 【花蓮美食與行程規劃】 🌊\n\n--- 🥟 美食口袋清單 ---\n`;
+      foodItems.forEach((item, idx) => {
+        text += `${idx + 1}. ${item.name} (${item.visited ? '✅已吃' : '📌想吃'})\n📍 ${item.address || '花蓮'}\n\n`;
+      });
+
+      text += `\n--- 📅 多日旅遊行程 ---\n`;
+      let highestDay = maxDayCount;
+      tripItems.forEach(item => { if (item.day && item.day > highestDay) highestDay = item.day; });
+      const days = [];
+      for (let i = 1; i <= highestDay; i++) days.push(i);
+
+      days.forEach(d => {
+        const dateStr = dayDates[`day_${d}`] ? ` (${dayDates[`day_${d}`]})` : '';
+        text += `\n【第 ${d} 天${dateStr}】\n`;
+        const dayTrips = tripItems.filter(t => (t.day || 1) === d);
+        dayTrips.forEach((t, i) => {
+          text += `${i + 1}. [${t.time || '全天'}] ${t.name}\n📍 ${t.address || '花蓮'}\n`;
+        });
+      });
+
+      shareTextarea.value = text;
+      shareModal.classList.remove('hidden');
+    }
+
+    document.getElementById('openShareModalBtn').addEventListener('click', openShareModal);
+    document.getElementById('closeShareModalBtn').addEventListener('click', () => {
+      shareModal.classList.add('hidden');
+    });
+
+    window.onload = init;
+  </script>
+</body>
+</html>
