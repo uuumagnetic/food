@@ -81,7 +81,6 @@
 
     <!-- ==================== TAB 1: 美食清單區塊 (維持不變) ==================== -->
     <div id="foodTabContent" class="space-y-6">
-      <!-- Preset Recommendations Bar / Chips -->
       <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
         <div class="flex items-center justify-between mb-2">
           <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
@@ -94,7 +93,6 @@
         <div id="quickAddChips" class="flex flex-wrap gap-2 pt-1 max-h-28 overflow-y-auto"></div>
       </section>
 
-      <!-- Search, Filter & Stats Toolbar -->
       <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-3">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
           <div class="relative md:col-span-5">
@@ -140,7 +138,6 @@
         </div>
       </section>
 
-      <!-- Food Cards List Container -->
       <section>
         <div id="foodList" class="space-y-3">
           <div class="text-center py-12 text-slate-400 bg-white rounded-2xl border border-slate-200">
@@ -163,10 +160,7 @@
     <div id="tripTabContent" class="space-y-6 hidden">
       <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-4">
         <div class="flex items-center justify-between flex-wrap gap-3">
-          <!-- 天數按鈕列 -->
-          <div id="dayTabsContainer" class="flex flex-wrap gap-2">
-            <!-- 動態生成 Day 1, Day 2... -->
-          </div>
+          <div id="dayTabsContainer" class="flex flex-wrap gap-2"></div>
           <button id="addDayBtn" class="bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
             <i class="fa-solid fa-plus"></i> 新增天數
           </button>
@@ -177,7 +171,6 @@
             <h3 id="currentDayTitle" class="font-bold text-slate-800 text-base flex items-center gap-2">
               <i class="fa-solid fa-calendar-day text-teal-600"></i> <span>第一天行程</span>
             </h3>
-            <!-- 該天日期快速編輯 -->
             <div class="flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200">
               <i class="fa-regular fa-calendar text-slate-400 text-xs"></i>
               <input type="text" id="dayDateInput" placeholder="填寫日期(例如: 10/20)" class="bg-transparent text-xs text-slate-700 focus:outline-none w-28 font-medium">
@@ -191,11 +184,8 @@
         </div>
       </section>
 
-      <!-- 行程列表容器 -->
       <section>
-        <div id="tripList" class="space-y-3">
-          <!-- 動態載入行程點 -->
-        </div>
+        <div id="tripList" class="space-y-3"></div>
         <div id="emptyTripState" class="hidden text-center py-12 px-4 bg-white rounded-2xl border border-dashed border-slate-300">
           <div class="w-16 h-16 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
             <i class="fa-solid fa-route"></i>
@@ -309,26 +299,22 @@
       <form id="tripForm" class="p-6 space-y-4 overflow-y-auto flex-1 text-sm">
         <input type="hidden" id="editTripId" value="">
 
-        <div class="grid grid-cols-2 gap-3">
-          <div class="space-y-1.5">
-            <label class="font-bold text-slate-700">選擇時段</label>
-            <select id="tripTimeSelect" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all font-medium text-slate-700">
-              <option value="上午 09:00">🌅 上午 09:00</option>
-              <option value="上午 11:00" selected>🕛 上午 11:00</option>
-              <option value="中午 12:30">🍜 中午 12:30 (午餐)</option>
-              <option value="下午 14:30">☕ 下午 14:30</option>
-              <option value="下午 16:30">🌇 下午 16:30</option>
-              <option value="晚上 18:30">🌙 晚上 18:30 (晚餐)</option>
-              <option value="晚上 20:30">✨ 晚上 20:30 (宵夜)</option>
-              <option value="自訂">✏️ 自訂時段...</option>
-            </select>
+        <!-- 優化後的時間快速點選區 -->
+        <div class="space-y-1.5">
+          <label class="font-bold text-slate-700 flex items-center justify-between">
+            <span>時段 / 時間 (點擊下方快速填入，或直接輸入)</span>
+          </label>
+          <div class="flex flex-wrap gap-1.5 mb-2">
+            <button type="button" onclick="setTripTime('上午 09:00')" class="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-medium transition-all">🌅 上午 09:00</button>
+            <button type="button" onclick="setTripTime('上午 11:00')" class="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-medium transition-all">🕛 上午 11:00</button>
+            <button type="button" onclick="setTripTime('中午 12:30')" class="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-medium transition-all">🍜 中午 12:30</button>
+            <button type="button" onclick="setTripTime('下午 14:30')" class="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-medium transition-all">☕ 下午 14:30</button>
+            <button type="button" onclick="setTripTime('下午 16:30')" class="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-medium transition-all">🌇 下午 16:30</button>
+            <button type="button" onclick="setTripTime('晚上 18:30')" class="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-medium transition-all">🌙 晚上 18:30</button>
+            <button type="button" onclick="setTripTime('晚上 20:30')" class="px-2.5 py-1 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 rounded-lg text-xs font-medium transition-all">✨ 晚上 20:30</button>
           </div>
-
-          <div class="space-y-1.5" id="customTimeWrapper">
-            <label class="font-bold text-slate-700">自訂時間</label>
-            <input type="text" id="tripTimeCustom" placeholder="例如：10:15" 
-              class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all font-medium">
-          </div>
+          <input type="text" id="tripTimeInput" required placeholder="例如：下午 02:00 或 14:00" 
+            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all font-medium">
         </div>
 
         <div class="space-y-1.5">
@@ -358,7 +344,7 @@
 
         <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
           <button type="button" id="cancelTripFormBtn" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 font-bold transition-all">取消</button>
-          <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold shadow-md shadow-teal-500/20 transition-all">儲存行程</button>
+          <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-teal-700 text-white font-bold shadow-md shadow-teal-500/20 transition-all">儲存行程</button>
         </div>
       </form>
     </div>
@@ -434,9 +420,9 @@
 
     let foodItems = [];
     let tripItems = [];
-    let dayDates = {}; // 儲存每一天對應的日期
+    let dayDates = {};
     let currentStatusFilter = 'ALL';
-    let currentActiveTab = 'FOOD'; // FOOD or TRIP
+    let currentActiveTab = 'FOOD';
     let currentDay = 1;
 
     const foodTabContent = document.getElementById('foodTabContent');
@@ -464,9 +450,7 @@
     const tripModal = document.getElementById('tripModal');
     const tripForm = document.getElementById('tripForm');
     const editTripId = document.getElementById('editTripId');
-    const tripTimeSelect = document.getElementById('tripTimeSelect');
-    const tripTimeCustom = document.getElementById('tripTimeCustom');
-    const customTimeWrapper = document.getElementById('customTimeWrapper');
+    const tripTimeInput = document.getElementById('tripTimeInput');
     const tripName = document.getElementById('tripName');
     const tripAddress = document.getElementById('tripAddress');
     const tripNote = document.getElementById('tripNote');
@@ -704,6 +688,10 @@
       renderTripList();
     };
 
+    window.setTripTime = function(timeStr) {
+      tripTimeInput.value = timeStr;
+    };
+
     function escapeHtml(str) {
       if (!str) return '';
       return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
@@ -770,22 +758,11 @@
         }
       });
 
-      // 行程日期即時儲存
       dayDateInput.addEventListener('blur', async () => {
         const val = dayDateInput.value.trim();
         dayDates[`day_${currentDay}`] = val;
         await metaCollectionRef.doc('day_dates').set(dayDates, { merge: true });
         renderTripList();
-      });
-
-      // 時段下拉選單連動自訂輸入框
-      tripTimeSelect.addEventListener('change', () => {
-        if (tripTimeSelect.value === '自訂') {
-          customTimeWrapper.classList.remove('hidden');
-          tripTimeCustom.focus();
-        } else {
-          customTimeWrapper.classList.add('hidden');
-        }
       });
 
       document.getElementById('openAddTripModalBtn').addEventListener('click', () => openAddTripModal());
@@ -881,8 +858,7 @@
     function openAddTripModal() {
       editTripId.value = '';
       tripForm.reset();
-      tripTimeSelect.value = "上午 11:00";
-      customTimeWrapper.classList.add('hidden');
+      tripTimeInput.value = "上午 11:00";
       tripModal.classList.remove('hidden');
       tripName.focus();
     }
@@ -894,18 +870,7 @@
       tripName.value = item.name || '';
       tripAddress.value = item.address || '';
       tripNote.value = item.note || '';
-
-      const timeVal = item.time || '';
-      const matchOpt = Array.from(tripTimeSelect.options).some(opt => opt.value === timeVal);
-      if (matchOpt) {
-        tripTimeSelect.value = timeVal;
-        customTimeWrapper.classList.add('hidden');
-      } else {
-        tripTimeSelect.value = '自訂';
-        customTimeWrapper.classList.remove('hidden');
-        tripTimeCustom.value = timeVal;
-      }
-
+      tripTimeInput.value = item.time || '';
       tripModal.classList.remove('hidden');
     };
 
@@ -937,14 +902,9 @@
     async function handleTripFormSubmit(e) {
       e.preventDefault();
       const id = editTripId.value;
-      let timeVal = tripTimeSelect.value;
-      if (timeVal === '自訂') {
-        timeVal = tripTimeCustom.value.trim() || '自訂時段';
-      }
-
       const data = {
         day: currentDay,
-        time: timeVal,
+        time: tripTimeInput.value.trim(),
         name: tripName.value.trim(),
         address: tripAddress.value.trim(),
         note: tripNote.value.trim()
