@@ -438,16 +438,15 @@
       }, 2500);
     }
 
-    // ===== 熱門名店「換一批」隨機渲染功能 =====
+    // 熱門名店「換一批」隨機渲染功能
     function renderRandomChips() {
-      // 隨機抽選 6-8 個不重複的熱門店家
       const shuffled = [...PRESET_HUALIEN_DATABASE].sort(() => 0.5 - Math.random());
       const selected = shuffled.slice(0, 7);
 
       quickAddChips.innerHTML = selected.map(spot => `
-        <button type="button" onclick="quickAddSpot('${spot.name}')" class="text-xs bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 font-medium shadow-2xs">
+        <button type="button" onclick="quickAddSpot('${escapeHtml(spot.name).replace(/'/g, "\\'")}')" class="text-xs bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 font-medium shadow-2xs">
           <i class="fa-solid fa-plus text-[10px] text-teal-500"></i>
-          <span>${spot.name}</span>
+          <span>${escapeHtml(spot.name)}</span>
         </button>
       `).join('');
     }
@@ -619,10 +618,9 @@
       document.getElementById('closeModalBtn').addEventListener('click', closeModal);
       document.getElementById('cancelFormBtn').addEventListener('click', closeModal);
 
-      // ===== 1. 智慧感應輸入與自動帶入邏輯 =====
+      // 智慧感應輸入與自動帶入邏輯
       itemName.addEventListener('input', handleNameInput);
       
-      // 點擊畫面其他地方關閉下拉感應選單
       document.addEventListener('click', (e) => {
         if (!itemName.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
           autocompleteDropdown.classList.add('hidden');
@@ -648,7 +646,7 @@
 
       if (matches.length > 0) {
         autocompleteDropdown.innerHTML = matches.map(spot => `
-          <div onclick="selectPresetOption('${escapeHtml(spot.name)}')" class="px-4 py-3 hover:bg-teal-50 cursor-pointer flex items-center justify-between transition-colors">
+          <div onclick="selectPresetOption('${escapeHtml(spot.name).replace(/'/g, "\\'")}')" class="px-4 py-3 hover:bg-teal-50 cursor-pointer flex items-center justify-between transition-colors">
             <div>
               <div class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
                 <i class="fa-solid fa-utensils text-teal-500 text-xs"></i> ${escapeHtml(spot.name)}
@@ -664,7 +662,7 @@
       }
     }
 
-    // 點擊感應清單項目後，一次自動帶入地址、分類、備註
+    // 全域宣告點擊感應清單項目後，自動帶入地址、分類、備註
     window.selectPresetOption = function(spotName) {
       const spot = PRESET_HUALIEN_DATABASE.find(s => s.name === spotName);
       if (spot) {
@@ -672,7 +670,7 @@
         itemAddress.value = spot.address;
         if (spot.category) itemCategory.value = spot.category;
         if (spot.note && !itemNote.value) itemNote.value = spot.note;
-        showToast(`已自動感應帶入「${spot.name}」的資料！`);
+        showToast(`已自動帶入「${spot.name}」的資料！`);
       }
       autocompleteDropdown.classList.add('hidden');
     };
