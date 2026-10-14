@@ -17,6 +17,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
+  <!-- Google Maps Places API (免金鑰簡易自動完成連線) -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=&libraries=places"></script>
+
   <script>
     tailwind.config = {
       theme: {
@@ -33,6 +36,10 @@
     ::-webkit-scrollbar-track { background: #f1f5f9; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    /* Google Places Autocomplete 下拉選單樣式優化 */
+    .pac-container { z-index: 99999 !important; border-radius: 12px; margin-top: 4px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; font-family: 'Noto Sans TC', sans-serif; }
+    .pac-item { padding: 10px 14px; cursor: pointer; }
+    .pac-item:hover { background-color: #f0fdf4; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans selection:bg-teal-500 selection:text-white pb-12">
@@ -49,7 +56,7 @@
             花蓮美食口袋清單
             <span class="text-xs bg-yellow-400 text-slate-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Hualien Food</span>
           </h1>
-          <p class="text-xs text-teal-100 mt-0.5">自由輸入 ‧ 一鍵直達 Google 地圖 ‧ 多人同步</p>
+          <p class="text-xs text-teal-100 mt-0.5">Google 地點即時感應 ‧ 一鍵直達導航 ‧ 多人同步</p>
         </div>
       </div>
       
@@ -73,7 +80,7 @@
     <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
       <div class="flex items-center justify-between mb-2">
         <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-          <i class="fa-solid fa-fire text-orange-500"></i> 常用熱門花蓮名店快速新增 (點擊帶入)
+          <i class="fa-solid fa-fire text-orange-500"></i> 熱門花蓮名店快速新增 (點擊帶入)
         </h2>
         <button type="button" id="refreshChipsBtn" class="text-xs text-teal-600 hover:text-teal-700 font-bold flex items-center gap-1 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-lg transition-all">
           <i class="fa-solid fa-rotate"></i> 換一批
@@ -168,13 +175,13 @@
       <form id="foodForm" class="p-6 space-y-4 overflow-y-auto flex-1 text-sm">
         <input type="hidden" id="editItemId" value="">
 
-        <!-- Store Name Input -->
-        <div class="space-y-1.5">
+        <!-- Name with Google Place Autocomplete -->
+        <div class="space-y-1.5 relative">
           <label class="font-bold text-slate-700 flex items-center justify-between">
             <span>店家名稱 <span class="text-rose-500">*</span></span>
-            <span class="text-[11px] text-teal-600 font-normal">自由輸入任何店家、路邊攤或餐廳</span>
+            <span class="text-[11px] text-teal-600 font-normal"><i class="fa-solid fa-location-dot"></i> 輸入名稱自動聯想 Google 地標</span>
           </label>
-          <input type="text" id="itemName" required placeholder="例如：慶豐麵店、私房小吃..." 
+          <input type="text" id="itemName" required autocomplete="off" placeholder="例如：慶豐麵店、花蓮香扁食..." 
             class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all font-medium">
         </div>
 
@@ -206,15 +213,15 @@
           </div>
         </div>
 
-        <!-- Address with Quick Google Search Button -->
+        <!-- Address with One-Click Google Search Button -->
         <div class="space-y-1.5">
           <label class="font-bold text-slate-700 flex items-center justify-between">
             <span>地址</span>
-            <button type="button" id="searchMapsBtn" class="text-[11px] bg-teal-50 hover:bg-teal-100 text-teal-700 px-2 py-0.5 rounded-lg font-bold transition-all flex items-center gap-1">
+            <button type="button" id="searchMapsBtn" class="text-[11px] bg-teal-50 hover:bg-teal-100 text-teal-700 px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 shadow-2xs">
               <i class="fa-solid fa-magnifying-glass-location"></i> 一鍵 Google 尋找地址
             </button>
           </label>
-          <input type="text" id="itemAddress" placeholder="例如：花蓮縣吉安鄉吉安路六號 (可直接貼上)" 
+          <input type="text" id="itemAddress" placeholder="選擇上方 Google 地標或點擊右上方按鈕尋找" 
             class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700">
         </div>
 
@@ -256,7 +263,7 @@
 
       <div class="p-6 space-y-4">
         <p class="text-xs text-slate-500">
-          此格式包含店家名稱、地址以及 Google 地圖導航連結，可以直接複製文字傳送到 LINE 群組與朋友討論！
+          此格式包含店家名稱,地址以及 Google 地圖導航連結，可以直接複製文字傳送到 LINE 群組與朋友討論！
         </p>
 
         <textarea id="shareTextarea" readonly rows="10" 
@@ -309,6 +316,7 @@
 
     let foodItems = [];
     let currentStatusFilter = 'ALL';
+    let autocomplete = null;
 
     const foodListContainer = document.getElementById('foodList');
     const emptyState = document.getElementById('emptyState');
@@ -336,6 +344,29 @@
       listenToFirebase();
       renderRandomChips();
       bindEvents();
+      initGoogleAutocomplete();
+    }
+
+    // 初始化 Google Places 聯想
+    function initGoogleAutocomplete() {
+      if (typeof google === 'object' && google.maps && google.maps.places) {
+        autocomplete = new google.maps.places.Autocomplete(itemName, {
+          componentRestrictions: { country: 'tw' },
+          fields: ['name', 'formatted_address']
+        });
+
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          if (place && place.name) {
+            itemName.value = place.name;
+            if (place.formatted_address) {
+              // 自動代入抓到的地址（去除多餘字串）
+              itemAddress.value = place.formatted_address.replace(/^台灣/, '');
+              showToast(`已自動帶入「${place.name}」地址！`);
+            }
+          }
+        });
+      }
     }
 
     function listenToFirebase() {
@@ -476,10 +507,7 @@
       document.getElementById('cancelFormBtn').addEventListener('click', closeModal);
       foodForm.addEventListener('submit', handleFormSubmit);
 
-      document.getElementById('openShareModalBtn').addEventListener('click', openShareModal);
-      document.getElementById('closeShareModalBtn').addEventListener('click', closeModal);
-
-      // 一鍵開啟 Google 搜尋地址按鈕
+      // 地址欄位旁的一鍵 Google 尋找地址按鈕
       document.getElementById('searchMapsBtn').addEventListener('click', () => {
         const name = itemName.value.trim();
         if (!name) {
@@ -564,10 +592,10 @@
         text += `${idx + 1}. ${item.name} (${item.visited ? '✅已吃' : '📌想吃'})\n📍 ${item.address || '花蓮'}\n🗺️ ${generateGoogleMapsUrl(item.name, item.address)}\n\n`;
       });
       shareTextarea.value = text;
-      shareModal.classList.add('hidden'); // Fix modal toggle
+      shareModal.classList.remove('hidden');
     }
 
-    // Modal close bindings
+    document.getElementById('openShareModalBtn').addEventListener('click', openShareModal);
     document.getElementById('closeShareModalBtn').addEventListener('click', () => {
       shareModal.classList.add('hidden');
     });
