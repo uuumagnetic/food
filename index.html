@@ -49,7 +49,7 @@
             花蓮美食口袋清單
             <span class="text-xs bg-yellow-400 text-slate-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Hualien Food</span>
           </h1>
-          <p class="text-xs text-teal-100 mt-0.5">一鍵 Google 查地址 ‧ 一鍵直達導航 ‧ 多人同步</p>
+          <p class="text-xs text-teal-100 mt-0.5">智慧位址自動帶入 ‧ 一鍵直達導航 ‧ 多人同步</p>
         </div>
       </div>
       
@@ -168,11 +168,11 @@
       <form id="foodForm" class="p-6 space-y-4 overflow-y-auto flex-1 text-sm">
         <input type="hidden" id="editItemId" value="">
 
-        <!-- Name Input -->
+        <!-- Store Name Input -->
         <div class="space-y-1.5">
           <label class="font-bold text-slate-700 flex items-center justify-between">
             <span>店家名稱 <span class="text-rose-500">*</span></span>
-            <span class="text-[11px] text-teal-600 font-normal">自由輸入任何店家（例如：南華麵店）</span>
+            <span class="text-[11px] text-teal-600 font-normal">輸入店名（如：南華麵店）</span>
           </label>
           <input type="text" id="itemName" required placeholder="例如：南華麵店、慶豐麵店..." 
             class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all font-medium">
@@ -206,21 +206,21 @@
           </div>
         </div>
 
-        <!-- Address with Instant Google Search Button -->
+        <!-- Address with Automatic Geocoding Button -->
         <div class="space-y-1.5">
           <label class="font-bold text-slate-700 flex items-center justify-between">
             <span>地址</span>
-            <button type="button" id="searchMapsBtn" class="text-[11px] bg-teal-50 hover:bg-teal-100 text-teal-700 px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 shadow-2xs">
-              <i class="fa-solid fa-magnifying-glass-location text-teal-600"></i> 🔍 一鍵 Google 查地址
+            <button type="button" id="autoFetchAddressBtn" class="text-[11px] bg-teal-50 hover:bg-teal-100 text-teal-700 px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 shadow-2xs">
+              <i class="fa-solid fa-wand-magic-sparkles text-teal-600"></i> ✨ 自動抓取地址
             </button>
           </label>
-          <input type="text" id="itemAddress" placeholder="點擊右上方按鈕查地址並貼上" 
+          <input type="text" id="itemAddress" placeholder="輸入店名後點擊「自動抓取地址」或手動輸入" 
             class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700">
         </div>
 
         <div class="space-y-1.5">
           <label class="font-bold text-slate-700">心得備註 / 推薦必點</label>
-          <textarea id="itemNote" rows="2" placeholder="例如：必點煎麵、滷味！" 
+          <textarea id="itemNote" rows="2" placeholder="例如：必點招牌煎麵！" 
             class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all text-slate-700 resize-none"></textarea>
         </div>
 
@@ -476,16 +476,44 @@
       document.getElementById('cancelFormBtn').addEventListener('click', closeModal);
       foodForm.addEventListener('submit', handleFormSubmit);
 
-      // 一鍵 Google 查地址按鈕（點下去秒開 Google 搜尋該店家，查好地址貼過來最快最準）
-      document.getElementById('searchMapsBtn').addEventListener('click', () => {
+      // 自動抓取地址按鈕：點擊後自動透過線上地理查詢 API 尋找花蓮該店家的地址並填入
+      document.getElementById('autoFetchAddressBtn').addEventListener('click', async () => {
         const name = itemName.value.trim();
         if (!name) {
           showToast("請先輸入店家名稱（例如：南華麵店）！", false);
           itemName.focus();
           return;
         }
-        const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' 花蓮')}`;
-        window.open(searchUrl, '_blank');
+
+        showToast("正在自動搜尋地址...", true);
+
+        // 先檢查內建資料庫有沒有
+        const found = PRESET_HUALIEN_DATABASE.find(s => s.name.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(s.name.toLowerCase()));
+        if (found) {
+          itemAddress.value = found.address;
+          if (found.note && !itemNote.value) itemNote.value = found.note;
+          showToast(`已自動帶入「${found.name}」地址！`);
+          return;
+        }
+
+        // 若內建沒有，透過免費 API 查詢花蓮店家地理位置
+        try {
+          const query = encodeURIComponent(name + " 花蓮");
+          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&accept-language=zh-TW`);
+          const data = await res.json();
+
+          if (data && data.length > 0) {
+            let addr = data[0].display_name || '';
+            // 清理多餘國家字串
+            addr = addr.replace(/, 台灣.*$/, '').replace(/台灣/, '').trim();
+            itemAddress.value = addr;
+            showToast("成功自動抓取地址！");
+          } else {
+            showToast("找不到精確地址，請手動填寫或點擊導航查詢", false);
+          }
+        } catch (err) {
+          showToast("自動抓取失敗，請手動輸入地址", false);
+        }
       });
     }
 
